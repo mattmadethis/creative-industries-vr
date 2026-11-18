@@ -1,6 +1,6 @@
 # Creative Industries VR Exhibition
 
-A browser-based 3D/WebXR exhibition showcasing Music, Creative Media, Art & Design, and Performing Arts at North Devon College / Petroc.
+A browser-based 3D/WebXR exhibition showcasing Music, Creative Media, Art & Design, and Performing Arts at North Devon College.
 
 ## Migration status
 This repository is being separated from `mattmadethis/matthewgreasley.co.uk`, where the current live exhibition remains at `public/3dexhibition/` (v0.10.52, 18 November 2026).
