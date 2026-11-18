@@ -2492,7 +2492,16 @@
 
       let video=null,texture=null,source=null,panner=null,gain=null;
       let volume=0,status="",generation=0,exitElapsed=0,leaving=false;
-      function setIdle(message){screenMat.map=idleTexture;screenMat.needsUpdate=true;drawIdle(message);}
+      let loadingElapsed=0,loadingMessage="",isBuffering=false;
+      function setIdle(message){
+        loadingMessage=message;
+        screenMat.map=idleTexture;screenMat.needsUpdate=true;drawIdle(message);
+      }
+      function showVideoLoading(message){
+        if(!video)return;
+        isBuffering=true;loadingElapsed=0;
+        status=message;setIdle(message);
+      }
       function connectAudio(){
         if(!video||!filmAudio||source)return;
         try{
@@ -2511,7 +2520,7 @@
         try{
           await v.play();
           if(token!==generation||video!==v){v.pause();return;}
-          status="";
+          status="";isBuffering=false;
         }catch(err){
           if(token!==generation||video!==v)return;
           if(err.name==="NotAllowedError"){
@@ -2527,7 +2536,10 @@
         const v=document.createElement("video");video=v;
         v.preload="none";v.loop=exhibit.loop!==false;v.playsInline=true;v.setAttribute("playsinline","");v.setAttribute("webkit-playsinline","");
         v.volume=0;v.muted=false;
-        status="Loading "+(exhibit.artist||"film")+"…";setIdle("Loading film…");
+        showVideoLoading("Loading film…");
+        v.addEventListener("waiting",()=>{if(video===v)showVideoLoading("Buffering video…");});
+        v.addEventListener("stalled",()=>{if(video===v)showVideoLoading("Waiting for video stream…");});
+        v.addEventListener("playing",()=>{if(video!==v)return;isBuffering=false;status="";if(texture){screenMat.map=texture;screenMat.needsUpdate=true;}});
         v.addEventListener("loadeddata",()=>{
           if(video!==v)return;
           if(texture)texture.dispose();
@@ -2535,9 +2547,9 @@
           texture.generateMipmaps=false;
           if("colorSpace" in texture&&THREE.SRGBColorSpace)texture.colorSpace=THREE.SRGBColorSpace;
           else if(THREE.sRGBEncoding)texture.encoding=THREE.sRGBEncoding;
-          screenMat.map=texture;screenMat.needsUpdate=true;
+          if(!isBuffering){screenMat.map=texture;screenMat.needsUpdate=true;}
         });
-        v.addEventListener("error",()=>{if(video===v){status="Video unavailable · check MP4 upload";setIdle("Video unavailable");}});
+        v.addEventListener("error",()=>{if(video===v){isBuffering=false;status="Video unavailable · check MP4 upload";setIdle("Video unavailable");}});
         connectAudio();v.src=exhibit.url;play();
       }
       function stop(){
@@ -2546,7 +2558,7 @@
         if(v){v.pause();v.removeAttribute("src");v.load();}
         if(texture){texture.dispose();texture=null;}
         for(const node of [source,panner,gain])try{node?.disconnect();}catch{}
-        source=panner=gain=null;volume=0;leaving=false;exitElapsed=0;status="";
+        source=panner=gain=null;volume=0;leaving=false;exitElapsed=0;status="";isBuffering=false;
         setIdle("Enter the gallery to play");
       }
       function activate(){
@@ -2555,6 +2567,15 @@
       }
       function update(dt,inside){
         if(!video)return;
+        if(isBuffering){
+          loadingElapsed+=dt;
+          if(loadingElapsed>=.45){
+            loadingElapsed=0;
+            const base=loadingMessage.replace(/\.+$/, "");
+            const dots=".".repeat(1+Math.floor(performance.now()/450)%3);
+            drawIdle(base+dots);
+          }
+        }
         const depth=roomCoordinates(g,yawObject.position).depth;
         if(!inside&&!leaving){leaving=true;exitElapsed=0;}
         if(inside){leaving=false;exitElapsed=0;}
@@ -2927,6 +2948,7 @@
     const ambient26=(()=>{
       const g=galleryBySlot(0,3),ROOT="https://raw.githubusercontent.com/northdevoncollege-music/ambient26/main/audio/";
       let selected=1,inside=false,serial=0,playing=[],cache=new Map(),loading=false,previousButtons=[false,false],hoveredButton=0;
+      let boardStatus="Four spatial audio layers";
 
       // Continuous animated wall surfaces: a single procedural shader spans all
       // walls in room-local coordinates. No video decoding or texture downloads.
@@ -3013,7 +3035,7 @@
         ctx.fillStyle="#e6d6c1";ctx.font="bold 26px sans-serif";ctx.fillText("YEAR 1 MUSIC  /  SURROUND PROJECT",512,95);
         ctx.fillStyle="#f7eddf";ctx.font="300 83px sans-serif";ctx.fillText("AMBIENT MOODS",512,204);
         ctx.fillStyle="#f0d8b7";ctx.font="30px sans-serif";ctx.fillText("SOUND FIELD   "+String(selected).padStart(2,"0")+" / 12",512,266);
-        ctx.fillStyle="#dfc9ae";ctx.font="23px sans-serif";ctx.fillText("FOUR CHANNELS  ·  FIVE-SECOND TRANSITIONS",512,324);
+        ctx.fillStyle="#dfc9ae";ctx.font="23px sans-serif";ctx.fillText(boardStatus.toUpperCase(),512,324,940);
         ctx.fillStyle="#e4cdb1";ctx.font="24px sans-serif";ctx.fillText("POINT AT A CONTROL AND PULL THE TRIGGER",512,387);
         for(const [direction,x,labelText] of [[-1,112,"◀  PREVIOUS"],[1,652,"NEXT  ▶"]]){
           const active=hoveredButton===direction;
@@ -3100,8 +3122,9 @@
       async function start(){
         const token=++serial,number=selected;
         if(!inside){stop();return;}
-        if(!filmAudio||filmAudio.state!=="running"){status.textContent="Waiting for audio to be enabled";return;}
-        status.textContent="Loading scene "+String(number).padStart(2,"0")+"…";loading=true;
+        if(!filmAudio||filmAudio.state!=="running"){boardStatus="Waiting for audio · click to enable sound";status.textContent=boardStatus;draw();return;}
+        status.textContent="Loading scene "+String(number).padStart(2,"0")+"…";
+        boardStatus="Loading sound field "+String(number).padStart(2,"0")+"…";draw();loading=true;
         try{
           let buffers=cache.get(number);
           if(!buffers){
@@ -3115,6 +3138,7 @@
               if(token!==serial||!inside)return;
               buffers.push(seamlessBuffer(await filmAudio.decodeAudioData(bytes)));
               if(token!==serial||!inside)return;
+              boardStatus="Loading audio layer "+layer+" of 4…";status.textContent=boardStatus;draw();
             }
             cache.clear();cache.set(number,buffers);
           }
@@ -3136,7 +3160,8 @@
             playing.push({source,panner,gain,fadeStart:commonStart,fadeUntil:commonStart+CROSSFADE});
           });
           status.textContent="Playing · move around to explore the mix";
-        }catch(err){if(token===serial){status.textContent="Audio unavailable — select another scene";console.warn("Ambient26 audio:",err);}}
+          boardStatus="Playing · move around to explore the mix";draw();
+        }catch(err){if(token===serial){status.textContent="Audio unavailable — select another scene";boardStatus="Audio unavailable · choose another scene";draw();console.warn("Ambient26 audio:",err);}}
         finally{if(token===serial)loading=false;}
       }
       function choose(delta){
