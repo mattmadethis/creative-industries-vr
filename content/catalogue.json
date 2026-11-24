@@ -132,8 +132,19 @@
     {
       "department": "music",
       "room": 6,
-      "title": "Music showcase",
-      "exhibits": []
+      "title": "Teachers Rock",
+      "exhibits": [
+        {
+          "position": "back",
+          "type": "video",
+          "file": "media/video/music/teachers-rock.mp4",
+          "title": "Teachers Rock",
+          "artist": "North Devon College",
+          "credit": "Music department",
+          "description": "Teachers Rock performance film. Main colour projection with a synchronized monochrome side screen.",
+          "loop": true
+        }
+      ]
     },
     {
       "department": "media",
