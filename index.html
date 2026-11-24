@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.63 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.64 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3290,6 +3290,7 @@
       const g=galleryBySlot(0,4), root="media/surround/", ray=new THREE.Raycaster(), rotation=new THREE.Matrix4();
       const entries=[{title:"Mi Bombo",folder:"mi-bombo"},{title:"Blue Moon",folder:"blue-moon"},null,null];
       let inside=false,selected=-1,serial=0,voices=[],video=null,videoTexture=null,abort=null,loading=false,status="Select a composition",hover=-1,limiter=null;
+      const SPEAKER_RADIUS=3.0, SPEAKER_OFFSET=SPEAKER_RADIUS/Math.sqrt(2), DIRECT_LEVEL=.62, REFLECTION_LEVEL=.075;
       const panels=[], cards=[], canvas=document.createElement("canvas");canvas.width=1024;canvas.height=640;
       const ctx=canvas.getContext("2d"),tex=new THREE.CanvasTexture(canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
       if("colorSpace" in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
@@ -3359,10 +3360,21 @@
         }
         ctx.fillStyle="#d7e2ef";ctx.font="23px system-ui";ctx.fillText(status,512,589,950);tex.needsUpdate=true;
       }
+      // Each source has two quiet, filtered, spatial early reflections. No
+      // feedback or long reverb tail: preserve the original student mix.
+      function reflection(source,voiceGain,position,delaySeconds,level){
+        const delay=filmAudio.createDelay(.15);delay.delayTime.value=delaySeconds;
+        const filter=filmAudio.createBiquadFilter();filter.type="lowpass";filter.frequency.value=2800;filter.Q.value=.4;
+        const pan=filmAudio.createPanner();pan.panningModel="HRTF";pan.distanceModel="inverse";pan.rolloffFactor=0;
+        pan.positionX.value=position.x;pan.positionY.value=2.2;pan.positionZ.value=position.y;
+        const gain=filmAudio.createGain();gain.gain.value=level;
+        source.connect(delay).connect(filter).connect(pan).connect(gain).connect(voiceGain);
+        return [delay,filter,pan,gain];
+      }
       function stop(){
         serial++;abort?.abort();abort=null;loading=false;
         const now=filmAudio?.currentTime||0;
-        for(const v of voices){try{v.gain.gain.cancelScheduledValues(now);v.gain.gain.setTargetAtTime(0,now,.12);v.source.stop(now+.65);v.source.onended=()=>{v.source.disconnect();v.pan.disconnect();v.gain.disconnect();};}catch(_){}}
+        for(const v of voices){try{v.gain.gain.cancelScheduledValues(now);v.gain.gain.setTargetAtTime(0,now,.12);v.source.stop(now+.65);v.source.onended=()=>{v.source.disconnect();v.pan.disconnect();v.gain.disconnect();v.reflections.forEach(n=>n.disconnect());};}catch(_){}}
         voices=[];
         if(video){video.pause();video.removeAttribute("src");video.load();video=null;}videoTexture?.dispose();videoTexture=null;mat.map=null;mat.color.setHex(0x101521);mat.needsUpdate=true;
       }
@@ -3392,12 +3404,17 @@
             const source=filmAudio.createBufferSource();source.buffer=buffer;source.loop=true;source.loopEnd=duration;
             const pan=filmAudio.createPanner();pan.panningModel="HRTF";pan.distanceModel="inverse";// Position-dependent gain is applied explicitly below; HRTF retains directional cues.
             pan.refDistance=1;pan.rolloffFactor=0;pan.maxDistance=24;
-            const wp=localPoint(g,APOTHEM+SIDE/2+offsets[j][1]*(SIDE/2-.7),offsets[j][0]*(SIDE/2-.7));
-            pan.positionX.value=wp.x;pan.positionY.value=1.7;pan.positionZ.value=wp.y;
-            const gain=filmAudio.createGain();gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.62,start+.6);
-            source.connect(pan).connect(gain).connect(limiter);source.start(start);voices.push({source,pan,gain,x:wp.x,z:wp.y,fadeUntil:start+.6,lastGain:.62});
+            const [side,depth]=offsets[j];
+            const wp=localPoint(g,APOTHEM+SIDE/2+depth*SPEAKER_OFFSET,side*SPEAKER_OFFSET);
+            pan.positionX.value=wp.x;pan.positionY.value=1.65;pan.positionZ.value=wp.y;
+            const gain=filmAudio.createGain();gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(DIRECT_LEVEL,start+.6);
+            source.connect(pan).connect(gain).connect(limiter);
+            const sideWall=localPoint(g,APOTHEM+SIDE/2+depth*SPEAKER_OFFSET,side*(SIDE/2-.4));
+            const endWall=localPoint(g,APOTHEM+SIDE/2+depth*(SIDE/2-.4),side*SPEAKER_OFFSET);
+            const reflections=[...reflection(source,gain,sideWall,.024+j*.001,REFLECTION_LEVEL),...reflection(source,gain,endWall,.036+j*.001,REFLECTION_LEVEL*.7)];
+            source.start(start);voices.push({source,pan,gain,reflections,x:wp.x,z:wp.y,fadeUntil:start+.6,lastGain:DIRECT_LEVEL});
           });
-          status="Playing · "+entries[i].title+" · 4 position-tracked channels";draw();
+          status="Playing · "+entries[i].title+" · Immersive Quad";draw();
         }catch(err){if(token===serial){stop();status="Playback error · "+(err.message||"select to retry");draw();console.warn("Surround AV",err);}}
         finally{if(token===serial){loading=false;draw();}}
       }
@@ -3417,12 +3434,12 @@
           const view=renderer.xr.isPresenting?renderer.xr.getCamera():camera;
           view.getWorldPosition(listenerPosition);
           const now=filmAudio.currentTime;
-          const weights=voices.map(v=>1/Math.pow(Math.max(1.25,Math.hypot(listenerPosition.x-v.x,listenerPosition.z-v.z)),1.55));
+          const weights=voices.map(v=>1/Math.pow(Math.max(.85,Math.hypot(listenerPosition.x-v.x,listenerPosition.z-v.z)),1.25));
           const norm=Math.hypot(...weights)||1;
           voices.forEach((v,k)=>{
             if(now<v.fadeUntil)return;
-            const target=.62*(.12+.88*2*weights[k]/norm);
-            if(Math.abs(target-v.lastGain)>.008){v.gain.gain.setTargetAtTime(target,now,.09);v.lastGain=target;}
+            const target=DIRECT_LEVEL*(.20+.80*2*weights[k]/norm);
+            if(Math.abs(target-v.lastGain)>.008){v.gain.gain.setTargetAtTime(target,now,.14);v.lastGain=target;}
           });
         }
         let h=-1;beams.forEach((beam,j)=>{beam.visible=inside&&renderer.xr.isPresenting&&!vrMenuActive;if(beam.visible){const i=controllerHit(vrMenuControllers[j]);if(i>=0)h=i;beam.material.color.setHex(i>=0?0xffffff:0x8edfff);}});if(h!==hover){hover=h;draw();}
