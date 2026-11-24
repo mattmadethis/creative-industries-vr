@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.59 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.60 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -1387,7 +1387,7 @@
     // Small placement descriptors are permanent; artwork resources are not.
     function artworkPlan(room){
       const g=room.gallery,n=g.normal,t=g.tangent;
-      if(g.department===departments[0]&&(g.slot===2||g.slot===3||g.slot===5))return [];
+      if(g.department===departments[0]&&(g.slot===2||g.slot===3||g.slot===4||g.slot===5))return [];
       const inset=WALL_T/2+0.065, flank=(SIDE+DOOR_W)/4;
       const plan=[];
       const add=(slot,depth,offset,normal,width)=>{
@@ -2571,7 +2571,7 @@
       const credit=new THREE.Mesh(new THREE.PlaneGeometry(3.6,.675),new THREE.MeshBasicMaterial({map:creditTex}));
       credit.position.copy(screen.position);credit.position.y=.39;credit.rotation.y=rotation;if(!teachersRock)scene.add(credit);
 
-      let video=null,texture=null,source=null,panner=null,gain=null;
+      let video=null,texture=null,source=null,panner=null,gain=null,filmLimiter=null;
       let volume=0,status="",generation=0,exitElapsed=0,leaving=false;
       let loadingElapsed=0,loadingMessage="",isBuffering=false;
       function setIdle(message){
@@ -2591,7 +2591,7 @@
           panner.refDistance=3;panner.rolloffFactor=.2;
           panner.positionX.value=screen.position.x;panner.positionY.value=screen.position.y;panner.positionZ.value=screen.position.z;
           gain=filmAudio.createGain();gain.gain.value=volume;
-          source.connect(panner).connect(gain).connect(filmAudio.destination);
+          if(teachersRock){filmLimiter=filmAudio.createDynamicsCompressor();filmLimiter.threshold.value=-3;filmLimiter.knee.value=3;filmLimiter.ratio.value=12;source.connect(gain).connect(filmLimiter).connect(filmAudio.destination);}else{source.connect(panner).connect(gain).connect(filmAudio.destination);}
           video.volume=1;
         }catch(err){console.warn("Spatial film audio unavailable:",err);try{source?.disconnect();source?.connect(filmAudio.destination);}catch{}gain=null;video.volume=volume;}
       }
@@ -2638,8 +2638,8 @@
         const v=video;video=null;
         if(v){v.pause();v.removeAttribute("src");v.load();}
         if(texture){texture.dispose();texture=null;}
-        for(const node of [source,panner,gain])try{node?.disconnect();}catch{}
-        source=panner=gain=null;volume=0;leaving=false;exitElapsed=0;status="";isBuffering=false;
+        for(const node of [source,panner,gain,filmLimiter])try{node?.disconnect();}catch{}
+        source=panner=gain=filmLimiter=null;volume=0;leaving=false;exitElapsed=0;status="";isBuffering=false;
         setIdle("Enter the gallery to play");
       }
       function activate(){
@@ -2660,9 +2660,9 @@
         const depth=roomCoordinates(g,yawObject.position).depth;
         if(!inside&&!leaving){leaving=true;exitElapsed=0;}
         if(inside){leaving=false;exitElapsed=0;}
-        const target=inside?galleryVolume(depth-APOTHEM):0;
+        const target=inside?(teachersRock?Math.min(1,Math.max(0,(depth-APOTHEM)/1.5)):galleryVolume(depth-APOTHEM)):0;
         volume+=(target-volume)*(1-Math.exp(-dt/FILM_GAIN_TIME));
-        if(gain&&filmAudio)gain.gain.setTargetAtTime(volume,filmAudio.currentTime,.04);
+        if(gain&&filmAudio)gain.gain.setTargetAtTime(volume*(teachersRock?1.65:1),filmAudio.currentTime,.04);
         else video.volume=volume;
         if(!inside){exitElapsed+=dt;if(volume<.002||exitElapsed>1.2)stop();}
         if(inside&&status)hud.textContent+="\n"+status;
@@ -3352,7 +3352,7 @@
           const base=root+entries[i].folder+"/",buffers=[];
           for(const ch of ["L","R","Ls","Rs"]){
             const response=await fetch(asset(base+ch+".mp3"),{signal});if(!response.ok)throw Error("Audio HTTP "+response.status);
-            buffers.push(await filmAudio.decodeAudioData(await response.arrayBuffer()));if(token!==serial||!inside)return;
+            const decoded=await filmAudio.decodeAudioData(await response.arrayBuffer());if(decoded.numberOfChannels!==1)throw Error(ch+" is not mono");buffers.push(decoded);if(token!==serial||!inside)return;status="Loading channel "+buffers.length+" / 4";draw();
           }
           const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.preload="auto";video=v;
           await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error("Video timeout")),20000);v.addEventListener("canplay",()=>{clearTimeout(timeout);resolve();},{once:true});v.addEventListener("error",()=>{clearTimeout(timeout);reject(Error("Video unavailable"));},{once:true});signal.addEventListener("abort",()=>{clearTimeout(timeout);reject(Error("Cancelled"));},{once:true});v.src=asset(base+"video.mp4");v.load();});
@@ -3361,19 +3361,19 @@
           videoTexture=new THREE.VideoTexture(v);videoTexture.minFilter=THREE.LinearFilter;videoTexture.magFilter=THREE.LinearFilter;
           if("colorSpace" in videoTexture&&THREE.SRGBColorSpace)videoTexture.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)videoTexture.encoding=THREE.sRGBEncoding;
           mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
-          if(!limiter){limiter=filmAudio.createDynamicsCompressor();limiter.connect(filmAudio.destination);}
+          if(!limiter){limiter=filmAudio.createDynamicsCompressor();limiter.threshold.value=-5;limiter.knee.value=6;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.15;limiter.connect(filmAudio.destination);}
           const start=filmAudio.currentTime+.08,duration=Math.min(...buffers.map(b=>b.duration));
-          const offsets=[[-1,1],[1,1],[-1,-1],[1,-1]];
+          const offsets=[[1,1],[-1,1],[1,-1],[-1,-1]];
           buffers.forEach((buffer,j)=>{
             const source=filmAudio.createBufferSource();source.buffer=buffer;source.loop=true;source.loopEnd=duration;
-            const pan=filmAudio.createPanner();pan.panningModel="HRTF";pan.distanceModel="inverse";pan.refDistance=2;pan.rolloffFactor=.45;pan.maxDistance=24;
+            const pan=filmAudio.createPanner();pan.panningModel="HRTF";pan.distanceModel="inverse";pan.refDistance=8;pan.rolloffFactor=.12;pan.maxDistance=24;
             const wp=localPoint(g,APOTHEM+SIDE/2+offsets[j][1]*(SIDE/2-.7),offsets[j][0]*(SIDE/2-.7));
             pan.positionX.value=wp.x;pan.positionY.value=1.7;pan.positionZ.value=wp.y;
-            const gain=filmAudio.createGain();gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.42,start+.6);
+            const gain=filmAudio.createGain();gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.62,start+.6);
             source.connect(pan).connect(gain).connect(limiter);source.start(start);voices.push({source,pan,gain});
           });
-          status="Playing · "+entries[i].title;draw();
-        }catch(err){if(token===serial){stop();status="Media unavailable · select to retry";draw();console.warn("Surround AV",err);}}
+          status="Playing · "+entries[i].title+" · 4 spatial channels";draw();
+        }catch(err){if(token===serial){stop();status="Playback error · "+(err.message||"select to retry");draw();console.warn("Surround AV",err);}}
         finally{if(token===serial){loading=false;draw();}}
       }
       function hit(){const h=ray.intersectObject(board,false)[0];if(!h?.uv)return -1;const x=h.uv.x*1024,y=(1-h.uv.y)*640;for(let i=0;i<4;i++){const a=52+(i%2)*470,b=138+Math.floor(i/2)*208;if(x>=a&&x<=a+450&&y>=b&&y<=b+190)return i;}return -1;}
