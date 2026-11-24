@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.56 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.57 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -1262,11 +1262,10 @@
     const placeholderCanvas=document.createElement("canvas");
     placeholderCanvas.width=512;placeholderCanvas.height=384;
     const placeholderCtx=placeholderCanvas.getContext("2d");
-    brandPanel(placeholderCtx,512,384,"#63b9e7");
-    placeholderCtx.textAlign="left";placeholderCtx.textBaseline="middle";
-    brandText(placeholderCtx,"DIGITAL, CREATIVE & BUSINESS",36,88,19,"#63b9e7",700,440);
-    brandText(placeholderCtx,"EXHIBITION",36,183,48,exhibitionBrand.white,800,440);
-    brandText(placeholderCtx,"North Devon College",36,252,23,exhibitionBrand.muted,500,440);
+    placeholderCtx.fillStyle="#e5e4df";placeholderCtx.fillRect(0,0,512,384);
+    placeholderCtx.strokeStyle="#d1d0ca";placeholderCtx.lineWidth=2;
+    placeholderCtx.strokeRect(14,14,484,356);
+    drawNdcLogo(placeholderCtx,256,192,288,180);
     const placeholderTexture=new THREE.CanvasTexture(placeholderCanvas);
     if("colorSpace" in placeholderTexture&&THREE.SRGBColorSpace)placeholderTexture.colorSpace=THREE.SRGBColorSpace;
     else if(THREE.sRGBEncoding)placeholderTexture.encoding=THREE.sRGBEncoding;
