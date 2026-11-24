@@ -2479,7 +2479,7 @@
       if("colorSpace" in idleTexture&&THREE.SRGBColorSpace)idleTexture.colorSpace=THREE.SRGBColorSpace;
       else if(THREE.sRGBEncoding)idleTexture.encoding=THREE.sRGBEncoding;
       drawIdle("Enter the gallery to play");
-      screenMat.map=idleTexture;
+      screenMat.map=idleTexture;if(sideMat)sideMat.uniforms.uMap.value=idleTexture;
       const screen=new THREE.Mesh(new THREE.PlaneGeometry(screenWidth,screenHeight),screenMat);
       screen.position.set(filmPosition.x,2.55,filmPosition.y);screen.rotation.y=rotation;
       scene.add(screen);
