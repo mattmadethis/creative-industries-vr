@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.53 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.54 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -2448,18 +2448,30 @@
     function createFilmExhibit(g,exhibit){
       const filmPosition=localPoint(g,APOTHEM+SIDE-WALL_T/2-0.075,0);
       const inward=new THREE.Vector3(-g.normal.x,0,-g.normal.y);
-      const screenWidth=6.4,screenHeight=screenWidth*9/16;
-      const rotation=Math.atan2(inward.x,inward.z);
-      // Teachers Rock: one decoded video texture feeds both screens in sync.
       const teachersRock=g.department===departments[0]&&g.slot===5;
-      const sideInward=new THREE.Vector3(-g.tangent.x,0,-g.tangent.y);
+      const screenWidth=teachersRock?SIDE-WALL_T-.04:6.4,screenHeight=teachersRock?WALL_H-.08:screenWidth*9/16;
+      const rotation=Math.atan2(inward.x,inward.z);
+      // Teachers Rock: one decoded texture feeds three wall-sized projections.
+      // Fill the wide wall without stretching; crop top/bottom symmetrically.
+      const wallCrop=(screenHeight/screenWidth)*(16/9);
+      const cropUV="vec2 uvWall=vUv;";
+      
       const sideMat=teachersRock?new THREE.ShaderMaterial({
         uniforms:{uMap:{value:null}},
         vertexShader:"varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
-        fragmentShader:"uniform sampler2D uMap; varying vec2 vUv; void main(){vec4 c=texture2D(uMap,vUv);float l=dot(c.rgb,vec3(0.299,0.587,0.114));vec3 grey=vec3(l)*0.68+vec3(0.025,0.04,0.065);gl_FragColor=vec4(grey,c.a);}",
+        fragmentShader:"uniform sampler2D uMap; varying vec2 vUv; void main(){"+cropUV+"vec4 c=texture2D(uMap,uvWall);float l=dot(c.rgb,vec3(0.299,0.587,0.114));vec3 grey=vec3(l*0.48);gl_FragColor=vec4(grey,c.a);}",
         depthWrite:true
       }):null;
       const screenMat=new THREE.MeshBasicMaterial({color:0xffffff});
+      function projectionGeometry(){
+        const geo=new THREE.PlaneGeometry(screenWidth,screenHeight);
+        if(teachersRock){
+          const uv=geo.attributes.uv;
+          for(let i=0;i<uv.count;i++)uv.setY(i,.5+(uv.getY(i)-.5)*wallCrop);
+          uv.needsUpdate=true;
+        }
+        return geo;
+      }
       // Idle image is a lightweight static title screen, not a video frame.
       const canvas=document.createElement("canvas");canvas.width=768;canvas.height=432;
       const ctx=canvas.getContext("2d");
@@ -2480,23 +2492,23 @@
       else if(THREE.sRGBEncoding)idleTexture.encoding=THREE.sRGBEncoding;
       drawIdle("Enter the gallery to play");
       screenMat.map=idleTexture;if(sideMat)sideMat.uniforms.uMap.value=idleTexture;
-      const screen=new THREE.Mesh(new THREE.PlaneGeometry(screenWidth,screenHeight),screenMat);
-      screen.position.set(filmPosition.x,2.55,filmPosition.y);screen.rotation.y=rotation;
+      const screen=new THREE.Mesh(projectionGeometry(),screenMat);
+      screen.position.set(filmPosition.x,teachersRock?WALL_H/2:2.55,filmPosition.y);screen.rotation.y=rotation;
       scene.add(screen);
       if(teachersRock){
-        const sidePoint=localPoint(g,APOTHEM+SIDE/2,SIDE/2-WALL_T/2-.075);
-        const sideRotation=Math.atan2(sideInward.x,sideInward.z);
-        const sideScreen=new THREE.Mesh(new THREE.PlaneGeometry(6.1,6.1*9/16),sideMat);
-        sideScreen.position.set(sidePoint.x,2.55,sidePoint.y);
-        sideScreen.rotation.y=sideRotation;
-        scene.add(sideScreen);
-        const sideFrame=new THREE.Mesh(new THREE.BoxGeometry(6.175,6.1*9/16+.075,.048),artFrameMaterial);
-        sideFrame.position.copy(sideScreen.position).addScaledVector(sideInward,-.028);
-        sideFrame.rotation.y=sideRotation;scene.add(sideFrame);
+        for(const sign of [-1,1]){
+          const sideInward=new THREE.Vector3(-sign*g.tangent.x,0,-sign*g.tangent.y);
+          const sidePoint=localPoint(g,APOTHEM+SIDE/2,sign*(SIDE/2-WALL_T/2-.075));
+          const sideScreen=new THREE.Mesh(projectionGeometry(),sideMat);
+          sideScreen.position.set(sidePoint.x,WALL_H/2,sidePoint.y);
+          sideScreen.rotation.y=Math.atan2(sideInward.x,sideInward.z);
+          scene.add(sideScreen);
+        }
+      }else{
+        const frameMesh=new THREE.Mesh(new THREE.BoxGeometry(screenWidth+.075,screenHeight+.075,.048),artFrameMaterial);
+        frameMesh.position.copy(screen.position).addScaledVector(inward,-.028);
+        frameMesh.rotation.y=rotation;scene.add(frameMesh);
       }
-      const frameMesh=new THREE.Mesh(new THREE.BoxGeometry(screenWidth+.075,screenHeight+.075,.048),artFrameMaterial);
-      frameMesh.position.copy(screen.position).addScaledVector(inward,-.028);
-      frameMesh.rotation.y=rotation;scene.add(frameMesh);
       // The permanent credit plaque stays visible even when playback is stopped.
       const creditCanvas=document.createElement("canvas");creditCanvas.width=1024;creditCanvas.height=192;
       const cc=creditCanvas.getContext("2d");
@@ -2508,7 +2520,7 @@
       cc.fillStyle="#c4cdd9";cc.font="24px system-ui";cc.fillText(exhibit.credit||"Media department",512,155,970);
       const creditTex=new THREE.CanvasTexture(creditCanvas);
       const credit=new THREE.Mesh(new THREE.PlaneGeometry(3.6,.675),new THREE.MeshBasicMaterial({map:creditTex}));
-      credit.position.copy(screen.position);credit.position.y=.39;credit.rotation.y=rotation;scene.add(credit);
+      credit.position.copy(screen.position);credit.position.y=.39;credit.rotation.y=rotation;if(!teachersRock)scene.add(credit);
 
       let video=null,texture=null,source=null,panner=null,gain=null;
       let volume=0,status="",generation=0,exitElapsed=0,leaving=false;
