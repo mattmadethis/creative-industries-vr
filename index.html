@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.60 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.61 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3366,13 +3366,14 @@
           const offsets=[[1,1],[-1,1],[1,-1],[-1,-1]];
           buffers.forEach((buffer,j)=>{
             const source=filmAudio.createBufferSource();source.buffer=buffer;source.loop=true;source.loopEnd=duration;
-            const pan=filmAudio.createPanner();pan.panningModel="HRTF";pan.distanceModel="inverse";pan.refDistance=8;pan.rolloffFactor=.12;pan.maxDistance=24;
+            const pan=filmAudio.createPanner();pan.panningModel="HRTF";pan.distanceModel="inverse";// Position-dependent gain is applied explicitly below; HRTF retains directional cues.
+            pan.refDistance=1;pan.rolloffFactor=0;pan.maxDistance=24;
             const wp=localPoint(g,APOTHEM+SIDE/2+offsets[j][1]*(SIDE/2-.7),offsets[j][0]*(SIDE/2-.7));
             pan.positionX.value=wp.x;pan.positionY.value=1.7;pan.positionZ.value=wp.y;
             const gain=filmAudio.createGain();gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.62,start+.6);
-            source.connect(pan).connect(gain).connect(limiter);source.start(start);voices.push({source,pan,gain});
+            source.connect(pan).connect(gain).connect(limiter);source.start(start);voices.push({source,pan,gain,x:wp.x,z:wp.y,fadeUntil:start+.6,lastGain:.62});
           });
-          status="Playing · "+entries[i].title+" · 4 spatial channels";draw();
+          status="Playing · "+entries[i].title+" · 4 position-tracked channels";draw();
         }catch(err){if(token===serial){stop();status="Playback error · "+(err.message||"select to retry");draw();console.warn("Surround AV",err);}}
         finally{if(token===serial){loading=false;draw();}}
       }
@@ -3381,10 +3382,25 @@
       vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(inside&&!vrMenuActive&&renderer.xr.isPresenting){const i=controllerHit(controller);if(i>=0)choose(i);}}));
       renderer.domElement.addEventListener("click",e=>{if(!inside||renderer.xr.isPresenting)return;const r=renderer.domElement.getBoundingClientRect();yawObject.updateMatrixWorld(true);ray.setFromCamera(isLocked?new THREE.Vector2(0,0):new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);const i=hit();if(i>=0)choose(i);});
       const beams=vrMenuControllers.map(controller=>{const beam=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x8edfff,transparent:true,opacity:.8,depthTest:false}));beam.visible=false;beam.scale.z=5;beam.frustumCulled=false;controller.add(beam);return beam;});
+      const listenerPosition=new THREE.Vector3();
       function update(){
         const q=roomCoordinates(g,yawObject.position),next=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
         if(next!==inside){inside=next;board.visible=inside;panels.forEach(p=>p.visible=inside);if(!inside){stop();selected=-1;status="Select a composition";draw();}}
         desktopSelector.style.display=inside&&!renderer.xr.isPresenting?"block":"none";
+        // Use the actual headset/camera world position, not just its orientation.
+        // Equal gain at the room centre; approaching a corner favours that speaker.
+        if(inside&&filmAudio&&voices.length){
+          const view=renderer.xr.isPresenting?renderer.xr.getCamera():camera;
+          view.getWorldPosition(listenerPosition);
+          const now=filmAudio.currentTime;
+          const weights=voices.map(v=>1/Math.pow(Math.max(1.25,Math.hypot(listenerPosition.x-v.x,listenerPosition.z-v.z)),1.55));
+          const norm=Math.hypot(...weights)||1;
+          voices.forEach((v,k)=>{
+            if(now<v.fadeUntil)return;
+            const target=.62*(.12+.88*2*weights[k]/norm);
+            if(Math.abs(target-v.lastGain)>.008){v.gain.gain.setTargetAtTime(target,now,.09);v.lastGain=target;}
+          });
+        }
         let h=-1;beams.forEach((beam,j)=>{beam.visible=inside&&renderer.xr.isPresenting&&!vrMenuActive;if(beam.visible){const i=controllerHit(vrMenuControllers[j]);if(i>=0)h=i;beam.material.color.setHex(i>=0?0xffffff:0x8edfff);}});if(h!==hover){hover=h;draw();}
       }
       draw();return {update};
