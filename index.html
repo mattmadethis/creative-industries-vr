@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.62 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.63 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3288,7 +3288,7 @@
     // Four selectable Year 2 audiovisual installations, with one shared video decoder.
     const surroundAV=(()=>{
       const g=galleryBySlot(0,4), root="media/surround/", ray=new THREE.Raycaster(), rotation=new THREE.Matrix4();
-      const entries=[{title:"Mi Bombo",folder:"mi-bombo"},null,null,null];
+      const entries=[{title:"Mi Bombo",folder:"mi-bombo"},{title:"Blue Moon",folder:"blue-moon"},null,null];
       let inside=false,selected=-1,serial=0,voices=[],video=null,videoTexture=null,abort=null,loading=false,status="Select a composition",hover=-1,limiter=null;
       const panels=[], cards=[], canvas=document.createElement("canvas");canvas.width=1024;canvas.height=640;
       const ctx=canvas.getContext("2d"),tex=new THREE.CanvasTexture(canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
@@ -3332,26 +3332,25 @@
       // Selector stays in front of the rear projection.
       const board=new THREE.Mesh(new THREE.PlaneGeometry(4.5,2.8125),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
       const p=localPoint(g,APOTHEM+SIDE-.34,0);board.position.set(p.x,Math.min(WALL_H-1.45,2.1),p.y);board.rotation.y=Math.atan2(-g.normal.x,-g.normal.y);board.visible=false;scene.add(board);
-      const thumb=new Image();thumb.onload=()=>draw();thumb.onerror=()=>draw();thumb.src=asset(root+"mi-bombo/thumb.jpg");
+      const thumbs=entries.map(entry=>{if(!entry)return null;const img=new Image();img.onload=()=>draw();img.onerror=()=>draw();img.src=asset(root+entry.folder+"/thumb.jpg");return img;});
       const desktopSelector=document.createElement("div");
       desktopSelector.id="surroundAVSelector";
       desktopSelector.style.cssText="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:14;max-width:90vw;width:360px;background:#101b2aee;border:1px solid #63b9e7;border-radius:12px;padding:12px;text-align:center;color:white;box-shadow:0 6px 24px #0009";
-      desktopSelector.innerHTML='<div style="font-size:11px;letter-spacing:.12em;margin-bottom:7px">IMMERSIVE SOUND &amp; VISION</div><button type="button" style="width:100%;padding:10px">▶ Play Mi Bombo</button><div style="font-size:12px;margin-top:7px" aria-live="polite"></div><div style="font-size:11px;opacity:.7;margin-top:4px">Press 1 to play · Esc to release mouse</div>';
+      desktopSelector.innerHTML='<div style="font-size:11px;letter-spacing:.12em;margin-bottom:7px">IMMERSIVE SOUND &amp; VISION</div><div style="display:flex;gap:8px"><button type="button" data-slot="0" style="flex:1;padding:10px">▶ Mi Bombo</button><button type="button" data-slot="1" style="flex:1;padding:10px">▶ Blue Moon</button></div><div style="font-size:12px;margin-top:7px" aria-live="polite"></div><div style="font-size:11px;opacity:.7;margin-top:4px">Press 1 or 2 to play · Esc to release mouse</div>';
       document.body.appendChild(desktopSelector);
-      const desktopPlay=desktopSelector.querySelector("button"), desktopStatus=desktopSelector.querySelector('[aria-live]');
-      desktopPlay.addEventListener("click",e=>{e.stopPropagation();choose(0);});
-      addEventListener("keydown",e=>{if(inside&&!renderer.xr.isPresenting&&!e.repeat&&e.code==="Digit1"){e.preventDefault();choose(0);}});
+      const desktopPlays=Array.from(desktopSelector.querySelectorAll("button")), desktopStatus=desktopSelector.querySelector('[aria-live]');
+      desktopPlays.forEach(button=>button.addEventListener("click",e=>{e.stopPropagation();choose(Number(button.dataset.slot));}));
+      addEventListener("keydown",e=>{if(inside&&!renderer.xr.isPresenting&&!e.repeat&&/^Digit[12]$/.test(e.code)){e.preventDefault();choose(Number(e.code.slice(-1))-1);}});
       function draw(){
         desktopStatus.textContent=status;
-        desktopPlay.textContent=loading?"Loading…":voices.length?"↻ Restart Mi Bombo":"▶ Play Mi Bombo";
-        desktopPlay.disabled=loading;
+        desktopPlays.forEach((button,i)=>{button.textContent=selected===i&&loading?"Loading…":(selected===i&&voices.length?"↻ ":"▶ ")+entries[i].title;button.disabled=selected===i&&loading;});
         brandPanel(ctx,1024,640,deptColor(g.department));
         ctx.textAlign="center";ctx.fillStyle="#63b9e7";ctx.font="bold 23px system-ui";ctx.fillText("YEAR 2 MUSIC / SURROUND PROJECT",512,48);
         ctx.fillStyle="#fff";ctx.font="bold 48px system-ui";ctx.fillText("IMMERSIVE SOUND & VISION",512,106);
         for(let i=0;i<4;i++){
           const x=52+(i%2)*470,y=138+Math.floor(i/2)*208;
           ctx.fillStyle="#182639";ctx.fillRect(x,y,450,190);
-          if(i===0&&thumb.complete&&thumb.naturalWidth)ctx.drawImage(thumb,x+8,y+8,218,123);else{ctx.fillStyle="#e5e4df";ctx.fillRect(x+8,y+8,218,123);drawNdcLogo(ctx,x+117,y+69,164,90);}
+          const thumb=thumbs[i];if(thumb?.complete&&thumb.naturalWidth)ctx.drawImage(thumb,x+8,y+8,218,123);else{ctx.fillStyle="#e5e4df";ctx.fillRect(x+8,y+8,218,123);drawNdcLogo(ctx,x+117,y+69,164,90);}
           ctx.strokeStyle=selected===i||hover===i?"#8ee1ff":"#526477";ctx.lineWidth=selected===i||hover===i?5:2;ctx.strokeRect(x,y,450,190);
           ctx.textAlign="left";ctx.fillStyle="#fff";ctx.font="bold 29px system-ui";ctx.fillText(entries[i]?.title||"Composition "+(i+1),x+242,y+47,198);
           ctx.fillStyle="#a9c4d9";ctx.font="20px system-ui";ctx.fillText(entries[i]?"SELECT TO PLAY":"Coming soon",x+242,y+83,198);
