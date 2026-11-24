@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.54 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.55 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -2473,9 +2473,22 @@
         return geo;
       }
       // Idle image is a lightweight static title screen, not a video frame.
-      const canvas=document.createElement("canvas");canvas.width=768;canvas.height=432;
+      const canvas=document.createElement("canvas");canvas.width=teachersRock?1920:768;canvas.height=teachersRock?1080:432;
       const ctx=canvas.getContext("2d");
       function drawIdle(message){
+        if(teachersRock){
+          // Keep all type within the central visible portion of the cropped texture.
+          ctx.fillStyle="#101a28";ctx.fillRect(0,0,1920,1080);
+          ctx.fillStyle="#63b9e7";ctx.fillRect(100,184,12,710);
+          ctx.textAlign="left";ctx.textBaseline="middle";
+          ctx.font="600 56px system-ui";ctx.fillText("TEACHERS ROCK®",160,264);
+          ctx.fillStyle="#ffffff";ctx.font="800 235px system-ui";ctx.fillText("RISE UP",145,456);
+          ctx.font="650 48px system-ui";ctx.fillText("ONE VOICE. ONE CHOIR.",160,625);
+          ctx.fillText("ONE GENERATION RISING TOGETHER.",160,687);
+          ctx.fillStyle="#b5c8dc";ctx.font="36px system-ui";ctx.fillText("Exeter Cathedral  ·  17 July 2026",160,775);
+          ctx.font="30px system-ui";ctx.fillStyle="#8bd5ff";ctx.fillText(message,160,849);
+          idleTexture.needsUpdate=true;return;
+        }
         ctx.fillStyle="#e5e4df";ctx.fillRect(0,0,768,432);
         ctx.fillStyle=deptColor(g.department);ctx.fillRect(0,0,768,8);
         drawNdcLogo(ctx,384,113,235,137);
@@ -2496,7 +2509,7 @@
       screen.position.set(filmPosition.x,teachersRock?WALL_H/2:2.55,filmPosition.y);screen.rotation.y=rotation;
       scene.add(screen);
       if(teachersRock){
-        for(const sign of [-1,1]){
+        for(const sign of [1]){
           const sideInward=new THREE.Vector3(-sign*g.tangent.x,0,-sign*g.tangent.y);
           const sidePoint=localPoint(g,APOTHEM+SIDE/2,sign*(SIDE/2-WALL_T/2-.075));
           const sideScreen=new THREE.Mesh(projectionGeometry(),sideMat);
@@ -2504,6 +2517,33 @@
           sideScreen.rotation.y=Math.atan2(sideInward.x,sideInward.z);
           scene.add(sideScreen);
         }
+        // Permanent exhibition wall: native wall aspect, no video crop or dimming.
+        const infoCanvas=document.createElement("canvas");infoCanvas.width=3072;infoCanvas.height=1240;
+        const ic=infoCanvas.getContext("2d");
+        ic.fillStyle="#111b29";ic.fillRect(0,0,3072,1240);
+        ic.fillStyle="#63b9e7";ic.fillRect(96,80,12,1080);
+        ic.textBaseline="top";ic.textAlign="left";
+        function infoText(text,x,y,size,color="#edf3fa",weight=400){ic.fillStyle=color;ic.font=weight+" "+size+"px system-ui";ic.fillText(text,x,y);}
+        function paragraph(text,x,y,width,size=43,line=61){ic.font="400 "+size+"px system-ui";ic.fillStyle="#d7e2ef";let row="";for(const word of text.split(" ")){const trial=row?row+" "+word:word;if(ic.measureText(trial).width>width&&row){ic.fillText(row,x,y);y+=line;row=word;}else row=trial;}if(row){ic.fillText(row,x,y);y+=line;}return y;}
+        infoText("TEACHERS ROCK®  /  RISE UP",152,79,49,"#63b9e7",700);
+        infoText("One voice. One choir.",152,155,82,"#ffffff",750);
+        infoText("One generation rising together.",152,252,61,"#ffffff",650);
+        let iy=372;
+        iy=paragraph("Hundreds of voices. One powerful message. One extraordinary journey.",152,iy,1280,43,57)+30;
+        iy=paragraph("Performed by Teachers Rock® in a special arrangement by Debbie Kent, Rise Up brings together children, young people, teachers, schools and communities through music.",152,iy,1280,43,57)+24;
+        iy=paragraph("Created in partnership with YoungMinds, the project celebrates young people’s voices, promotes inclusion and raises awareness of mental health and wellbeing.",152,iy,1280,43,57)+24;
+        iy=paragraph("Recorded at Exeter Cathedral on 17 July 2026, uniting voices from across the South West and beyond.",152,iy,1280,43,57)+24;
+        infoText("Every voice matters.",152,iy,49,"#63b9e7",700);
+        ic.fillStyle="#3b5067";ic.fillRect(1510,92,3,1056);
+        const rx=1570;infoText("PROJECT CREDITS",rx,80,49,"#63b9e7",700);
+        const credits=[["Original song","Rise Up – Andra Day"],["Founder, Executive Producer, Arranger & Musical Director","Debbie Kent"],["Assistant Director","Kirsten Wordley"],["Accompanist / Keyboard","John Bangham"],["Guitar · Mixing & Mastering","Garry Mitchell"],["Live Sound / Location Recording","Matrix Productions"],["Videography","Sam Brown"],["Recording venue & date","Exeter Cathedral · 17 July 2026"]];
+        let cy=158;for(const [role,name] of credits){infoText(role,rx,cy,36,"#a9bdd2",500);infoText(name,rx,cy+42,47,"#ffffff",650);cy+=109;}
+        infoText("NORTH DEVON COLLEGE",rx,1060,37,"#63b9e7",700);
+        infoText("John Bangham and Garry Mitchell · staff contributors",rx,1110,35,"#d7e2ef",500);
+        const infoTex=new THREE.CanvasTexture(infoCanvas);if("colorSpace" in infoTex&&THREE.SRGBColorSpace)infoTex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)infoTex.encoding=THREE.sRGBEncoding;
+        infoTex.minFilter=THREE.LinearFilter;infoTex.generateMipmaps=false;
+        const infoWall=new THREE.Mesh(new THREE.PlaneGeometry(screenWidth,screenHeight),new THREE.MeshBasicMaterial({map:infoTex,toneMapped:false}));
+        const ip=localPoint(g,APOTHEM+SIDE/2,-(SIDE/2-WALL_T/2-.075));infoWall.position.set(ip.x,WALL_H/2,ip.y);infoWall.rotation.y=Math.atan2(g.tangent.x,g.tangent.y);scene.add(infoWall);
       }else{
         const frameMesh=new THREE.Mesh(new THREE.BoxGeometry(screenWidth+.075,screenHeight+.075,.048),artFrameMaterial);
         frameMesh.position.copy(screen.position).addScaledVector(inward,-.028);
