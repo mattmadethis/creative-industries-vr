@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.55 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.56 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -480,6 +480,15 @@
     ];
     const departmentNameLines=d=>d.slug==="media"?["Creative","Media"]:d.slug==="art"?["Art &","Design"]:d.name==="Performing Arts"?["Performing","Arts"]:[d.name];
     const deptColor=d=>"#"+d.color.toString(16).padStart(6,"0");
+    const exhibitionBrand={background:"#101a28",panel:"#111b29",white:"#ffffff",muted:"#b5c8dc",body:"#d7e2ef",rule:"#3b5067"};
+    function brandPanel(ctx,w,h,accent,inset=0){
+      ctx.fillStyle=exhibitionBrand.background;ctx.fillRect(0,0,w,h);
+      ctx.fillStyle=accent;ctx.fillRect(inset+w*.025,h*.10,Math.max(3,w*.006),h*.80);
+    }
+    function brandText(ctx,text,x,y,size,color=exhibitionBrand.white,weight=600,maxWidth){
+      ctx.font=weight+" "+size+"px system-ui";ctx.fillStyle=color;
+      if(maxWidth)ctx.fillText(text,x,y,maxWidth);else ctx.fillText(text,x,y);
+    }
     const localPoint=(g,depth,offset)=>point(g.normal,g.tangent,depth,offset).add(g.department.origin);
     function roomCoordinates(g,pos){
       const x=pos.x-g.department.origin.x,z=pos.z-g.department.origin.y;
@@ -1253,10 +1262,11 @@
     const placeholderCanvas=document.createElement("canvas");
     placeholderCanvas.width=512;placeholderCanvas.height=384;
     const placeholderCtx=placeholderCanvas.getContext("2d");
-    placeholderCtx.fillStyle="#e5e4df";placeholderCtx.fillRect(0,0,512,384);
-    placeholderCtx.strokeStyle="#d1d0ca";placeholderCtx.lineWidth=2;
-    placeholderCtx.strokeRect(14,14,484,356);
-    drawNdcLogo(placeholderCtx,256,192,288,180);
+    brandPanel(placeholderCtx,512,384,"#63b9e7");
+    placeholderCtx.textAlign="left";placeholderCtx.textBaseline="middle";
+    brandText(placeholderCtx,"DIGITAL, CREATIVE & BUSINESS",36,88,19,"#63b9e7",700,440);
+    brandText(placeholderCtx,"EXHIBITION",36,183,48,exhibitionBrand.white,800,440);
+    brandText(placeholderCtx,"North Devon College",36,252,23,exhibitionBrand.muted,500,440);
     const placeholderTexture=new THREE.CanvasTexture(placeholderCanvas);
     if("colorSpace" in placeholderTexture&&THREE.SRGBColorSpace)placeholderTexture.colorSpace=THREE.SRGBColorSpace;
     else if(THREE.sRGBEncoding)placeholderTexture.encoding=THREE.sRGBEncoding;
@@ -1265,14 +1275,16 @@
     const furnitureBatches=new Map();
     const furnitureTransform=new THREE.Object3D();
     function plaqueMaterial(category,exhibit){
-      const key=exhibit?JSON.stringify([exhibit.title,exhibit.artist,exhibit.credit]):category;
+      const key=exhibit?JSON.stringify([category,exhibit.title,exhibit.artist,exhibit.credit]):category;
       if(plaqueMaterials.has(key))return plaqueMaterials.get(key);
       const canvas=document.createElement("canvas");canvas.width=256;canvas.height=80;
       const ctx=canvas.getContext("2d");
-      ctx.fillStyle="#f5f2eb";ctx.fillRect(0,0,256,80);
-      ctx.fillStyle="#25282c";ctx.font="600 15px system-ui";ctx.fillText(exhibit?.title||"Student exhibition",10,25,236);
-      ctx.font="12px system-ui";ctx.fillText(exhibit?.artist||category,10,47,236);
-      ctx.fillText(exhibit?.credit||"Exhibition work",10,64,236);
+      const department=departments.find(d=>d.name===category);
+      const accent=department?deptColor(department):"#63b9e7";
+      brandPanel(ctx,256,80,accent);
+      brandText(ctx,exhibit?.title||"Student exhibition",15,25,15,exhibitionBrand.white,750,231);
+      brandText(ctx,exhibit?.artist||category,15,47,12,exhibitionBrand.body,500,231);
+      brandText(ctx,exhibit?.credit||"Exhibition work",15,64,12,accent,500,231);
       const tex=new THREE.CanvasTexture(canvas);
       const mat=new THREE.MeshBasicMaterial({map:tex});
       plaqueMaterials.set(key,mat);return mat;
@@ -2489,15 +2501,14 @@
           ctx.font="30px system-ui";ctx.fillStyle="#8bd5ff";ctx.fillText(message,160,849);
           idleTexture.needsUpdate=true;return;
         }
-        ctx.fillStyle="#e5e4df";ctx.fillRect(0,0,768,432);
-        ctx.fillStyle=deptColor(g.department);ctx.fillRect(0,0,768,8);
-        drawNdcLogo(ctx,384,113,235,137);
-        ctx.textAlign="center";ctx.textBaseline="middle";
-        ctx.fillStyle="#202a2a";ctx.font="600 35px system-ui";
-        ctx.fillText(exhibit.title||"Student film",384,232,700);
-        ctx.font="26px system-ui";ctx.fillText(exhibit.artist||"",384,280,700);
-        ctx.fillStyle="#66716d";ctx.font="20px system-ui";
-        ctx.fillText(message,384,362,700);
+        const accent=deptColor(g.department);
+        brandPanel(ctx,768,432,accent);
+        ctx.textAlign="left";ctx.textBaseline="middle";
+        brandText(ctx,g.department.name.toUpperCase()+"  /  FILM",48,65,21,accent,700,660);
+        brandText(ctx,(exhibit.title||"Student film").toUpperCase(),48,153,53,exhibitionBrand.white,800,670);
+        brandText(ctx,exhibit.artist||"",48,231,32,exhibitionBrand.white,650,670);
+        brandText(ctx,exhibit.credit||"",48,280,22,exhibitionBrand.muted,500,670);
+        brandText(ctx,message,48,360,20,accent,500,670);
         idleTexture.needsUpdate=true;
       }
       const idleTexture=new THREE.CanvasTexture(canvas);
@@ -2536,10 +2547,10 @@
         infoText("Every voice matters.",152,iy,49,"#63b9e7",700);
         ic.fillStyle="#3b5067";ic.fillRect(1510,92,3,1056);
         const rx=1570;infoText("PROJECT CREDITS",rx,80,49,"#63b9e7",700);
-        const credits=[["Original song","Rise Up – Andra Day"],["Founder, Executive Producer, Arranger & Musical Director","Debbie Kent"],["Assistant Director","Kirsten Wordley"],["Accompanist / Keyboard","John Bangham"],["Guitar · Mixing & Mastering","Garry Mitchell"],["Live Sound / Location Recording","Matrix Productions"],["Videography","Sam Brown"],["Recording venue & date","Exeter Cathedral · 17 July 2026"]];
+        const credits=[["Original song","Rise Up – Andra Day"],["Founder, Executive Producer, Arranger & Musical Director","Debbie Kent"],["Assistant Director","Kirsten Wordley"],["Accompanist / Keyboard","John Bangham"],["Guitar · Mixing & Mastering","Gary Mitchell"],["Live Sound / Location Recording","Matrix Productions"],["Videography","Sam Brown"],["Recording venue & date","Exeter Cathedral · 17 July 2026"]];
         let cy=158;for(const [role,name] of credits){infoText(role,rx,cy,36,"#a9bdd2",500);infoText(name,rx,cy+42,47,"#ffffff",650);cy+=109;}
         infoText("NORTH DEVON COLLEGE",rx,1060,37,"#63b9e7",700);
-        infoText("John Bangham and Garry Mitchell · staff contributors",rx,1110,35,"#d7e2ef",500);
+        infoText("John Bangham and Gary Mitchell · staff contributors",rx,1110,35,"#d7e2ef",500);
         const infoTex=new THREE.CanvasTexture(infoCanvas);if("colorSpace" in infoTex&&THREE.SRGBColorSpace)infoTex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)infoTex.encoding=THREE.sRGBEncoding;
         infoTex.minFilter=THREE.LinearFilter;infoTex.generateMipmaps=false;
         const infoWall=new THREE.Mesh(new THREE.PlaneGeometry(screenWidth,screenHeight),new THREE.MeshBasicMaterial({map:infoTex,toneMapped:false}));
@@ -2552,12 +2563,11 @@
       // The permanent credit plaque stays visible even when playback is stopped.
       const creditCanvas=document.createElement("canvas");creditCanvas.width=1024;creditCanvas.height=192;
       const cc=creditCanvas.getContext("2d");
-      cc.fillStyle="#222831";cc.fillRect(0,0,1024,192);
-      cc.fillStyle=deptColor(g.department);cc.fillRect(0,0,12,192);
-      cc.fillStyle="#ffffff";cc.textAlign="center";cc.font="600 44px system-ui";
-      cc.fillText(exhibit.title||"Student film",512,65,970);
-      cc.font="32px system-ui";cc.fillText(exhibit.artist||"",512,111,970);
-      cc.fillStyle="#c4cdd9";cc.font="24px system-ui";cc.fillText(exhibit.credit||"Media department",512,155,970);
+      brandPanel(cc,1024,192,deptColor(g.department));
+      cc.textAlign="left";
+      brandText(cc,exhibit.title||"Student film",57,62,44,exhibitionBrand.white,750,910);
+      brandText(cc,exhibit.artist||"",57,112,32,exhibitionBrand.body,600,910);
+      brandText(cc,exhibit.credit||g.department.name,57,155,24,deptColor(g.department),500,910);
       const creditTex=new THREE.CanvasTexture(creditCanvas);
       const credit=new THREE.Mesh(new THREE.PlaneGeometry(3.6,.675),new THREE.MeshBasicMaterial({map:creditTex}));
       credit.position.copy(screen.position);credit.position.y=.39;credit.rotation.y=rotation;if(!teachersRock)scene.add(credit);
@@ -2802,8 +2812,8 @@
           }
         }
         // Back wall occupies the second quarter, with unmirrored lettering.
-        ctx.fillStyle="#dcecff";ctx.font="600 20px system-ui";ctx.textAlign="center";ctx.fillText("INTERSTELLAR PLANE",w*.375,30);
-        ctx.font="12px system-ui";ctx.fillStyle="#a9bddc";ctx.fillText("~~◇◆ komasan",w*.375,47);
+        ctx.textAlign="center";brandText(ctx,"INTERSTELLAR PLANE",w*.375,30,20,exhibitionBrand.white,800);
+        brandText(ctx,"~~◇◆ komasan",w*.375,47,12,"#63b9e7",600);
         texture.needsUpdate=true;
       }
       draw(0);
@@ -3100,20 +3110,19 @@
       function draw(){
         ctx.clearRect(0,0,1024,512);
         ctx.save();ctx.beginPath();ctx.roundRect(5,5,1014,502,76);ctx.clip();
-        ctx.fillStyle="rgba(29,25,24,.96)";ctx.fillRect(0,0,1024,512);
-        ctx.strokeStyle="#a18a70";ctx.lineWidth=2;ctx.strokeRect(18,18,988,476);
-        ctx.fillStyle="#806b59";ctx.fillRect(45,42,934,2);
+        brandPanel(ctx,1024,512,deptColor(g.department));
+        ctx.strokeStyle=exhibitionBrand.rule;ctx.lineWidth=2;ctx.strokeRect(18,18,988,476);
         ctx.textAlign="center";
-        ctx.fillStyle="#e6d6c1";ctx.font="bold 26px sans-serif";ctx.fillText("YEAR 1 MUSIC  /  SURROUND PROJECT",512,95);
-        ctx.fillStyle="#f7eddf";ctx.font="300 83px sans-serif";ctx.fillText("AMBIENT MOODS",512,204);
-        ctx.fillStyle="#f0d8b7";ctx.font="30px sans-serif";ctx.fillText("SOUND FIELD   "+String(selected).padStart(2,"0")+" / 12",512,266);
-        ctx.fillStyle="#dfc9ae";ctx.font="23px sans-serif";ctx.fillText(boardStatus.toUpperCase(),512,324,940);
-        ctx.fillStyle="#e4cdb1";ctx.font="24px sans-serif";ctx.fillText("POINT AT A CONTROL AND PULL THE TRIGGER",512,387);
+        ctx.fillStyle="#63b9e7";ctx.font="bold 26px system-ui";ctx.fillText("YEAR 1 MUSIC  /  SURROUND PROJECT",512,95);
+        ctx.fillStyle="#ffffff";ctx.font="800 83px system-ui";ctx.fillText("AMBIENT MOODS",512,204);
+        ctx.fillStyle="#d7e2ef";ctx.font="30px system-ui";ctx.fillText("SOUND FIELD   "+String(selected).padStart(2,"0")+" / 12",512,266);
+        ctx.fillStyle="#b5c8dc";ctx.font="23px system-ui";ctx.fillText(boardStatus.toUpperCase(),512,324,940);
+        ctx.fillStyle="#b5c8dc";ctx.font="24px system-ui";ctx.fillText("POINT AT A CONTROL AND PULL THE TRIGGER",512,387);
         for(const [direction,x,labelText] of [[-1,112,"◀  PREVIOUS"],[1,652,"NEXT  ▶"]]){
           const active=hoveredButton===direction;
-          ctx.fillStyle=active?"#98765a":"#47382f";ctx.beginPath();ctx.roundRect(x,424,260,64,23);ctx.fill();
-          ctx.strokeStyle=active?"#ffe3b5":"#b69b7d";ctx.lineWidth=active?5:2;ctx.stroke();
-          ctx.fillStyle=active?"#fff7e9":"#e1cdb6";ctx.font="bold 27px sans-serif";ctx.fillText(labelText,x+130,465);
+          ctx.fillStyle=active?"#315c77":"#23384d";ctx.beginPath();ctx.roundRect(x,424,260,64,23);ctx.fill();
+          ctx.strokeStyle=active?"#a5dfff":"#526d88";ctx.lineWidth=active?5:2;ctx.stroke();
+          ctx.fillStyle=active?"#ffffff":"#d7e2ef";ctx.font="bold 27px system-ui";ctx.fillText(labelText,x+130,465);
         }
         ctx.restore();texture.needsUpdate=true;label.textContent=String(selected).padStart(2,"0")+" / 12";
       }
