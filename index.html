@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.57 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.58 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -736,7 +736,7 @@
         hex.push(a,b);
         const g={id:galleries.length+1,slot:i,department,center:at(APOTHEM+SIDE/2,0),normal:n,tangent:t,vertices:[a,b,c,d],link:department.links[i]??null,title:department.titles[i]};
         galleries.push(g);
-        const immersiveRoom=department===departments[0]&&(i===2||i===3);
+        const immersiveRoom=department===departments[0]&&(i===2||i===3||i===4);
         const cinema=catalogue.get(departmentSlug(department)+"/"+(i+1)+"/back")?.type==="video"&&g.link===null;
         slab(g.vertices,0,immersiveRoom?new THREE.MeshStandardMaterial({color:0x080b14,roughness:1}):galleryFloor);slab(g.vertices,WALL_H,immersiveRoom?new THREE.MeshStandardMaterial({color:0x050811,roughness:1}):ceilingMat,true);
         // Circular gallery halo: a lightweight luminous fixture, distinct from lobby hexagons.
@@ -2380,7 +2380,7 @@
           setup();
           const p=yawObject.position;
           const inRoom=g=>{const q=roomCoordinates(g,p);return q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;};
-          const silent=inRoom(musicRoom)||inRoom(galleryBySlot(0,3))||cinemaRooms.some(r=>inRoom(r.g));
+          const silent=inRoom(musicRoom)||inRoom(galleryBySlot(0,3))||inRoom(galleryBySlot(0,4))||cinemaRooms.some(r=>inRoom(r.g));
           // Blend across the actual connecting galleries, rather than jumping at a lobby boundary.
           const weights=[0,0,0,0];
           const room=galleries.find(inRoom);
@@ -3284,6 +3284,100 @@
       }
       return {update};
     })();
+
+    // Four selectable Year 2 audiovisual installations, with one shared video decoder.
+    const surroundAV=(()=>{
+      const g=galleryBySlot(0,4), root="media/surround/", ray=new THREE.Raycaster(), rotation=new THREE.Matrix4();
+      const entries=[{title:"Mi Bombo",folder:"mi-bombo"},null,null,null];
+      let inside=false,selected=-1,serial=0,voices=[],video=null,videoTexture=null,abort=null,loading=false,status="Select a composition",hover=-1,limiter=null;
+      const panels=[], cards=[], canvas=document.createElement("canvas");canvas.width=1024;canvas.height=640;
+      const ctx=canvas.getContext("2d"),tex=new THREE.CanvasTexture(canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
+      if("colorSpace" in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
+      const [a,b,c,d]=g.vertices;
+      const mat=new THREE.MeshBasicMaterial({color:0x101521,side:THREE.FrontSide});
+      function screen(a,b,inward,low=.15,high=WALL_H-.15){
+        if(high<=low)return;
+        const p=a.clone().add(b).multiplyScalar(.5).addScaledVector(inward,WALL_T/2+.10);
+        const mesh=new THREE.Mesh(new THREE.PlaneGeometry(Math.max(.01,a.distanceTo(b)-.06),high-low),mat);
+        mesh.position.set(p.x,(low+high)/2,p.y);mesh.rotation.y=Math.atan2(inward.x,inward.y);mesh.visible=false;scene.add(mesh);panels.push(mesh);
+      }
+      screen(b,c,g.tangent.clone().negate());screen(d,a,g.tangent);screen(c,d,g.normal.clone().negate());
+      const dl=localPoint(g,APOTHEM,-DOOR_W/2),dr=localPoint(g,APOTHEM,DOOR_W/2);
+      screen(a,dl,g.normal);screen(dr,b,g.normal);screen(dl,dr,g.normal,DOOR_H+.04,WALL_H-.04);
+      // Selector stays in front of the rear projection.
+      const board=new THREE.Mesh(new THREE.PlaneGeometry(4.5,2.8125),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
+      const p=localPoint(g,APOTHEM+SIDE-.34,0);board.position.set(p.x,Math.min(WALL_H-1.45,2.1),p.y);board.rotation.y=Math.atan2(-g.normal.x,-g.normal.y);board.visible=false;scene.add(board);
+      const thumb=new Image();thumb.onload=()=>draw();thumb.onerror=()=>draw();thumb.src=asset(root+"mi-bombo/thumb.jpg");
+      function draw(){
+        brandPanel(ctx,1024,640,deptColor(g.department));
+        ctx.textAlign="center";ctx.fillStyle="#63b9e7";ctx.font="bold 23px system-ui";ctx.fillText("YEAR 2 MUSIC / SURROUND PROJECT",512,48);
+        ctx.fillStyle="#fff";ctx.font="bold 48px system-ui";ctx.fillText("IMMERSIVE SOUND & VISION",512,106);
+        for(let i=0;i<4;i++){
+          const x=52+(i%2)*470,y=138+Math.floor(i/2)*208;
+          ctx.fillStyle="#182639";ctx.fillRect(x,y,450,190);
+          if(i===0&&thumb.complete&&thumb.naturalWidth)ctx.drawImage(thumb,x+8,y+8,218,123);else{ctx.fillStyle="#e5e4df";ctx.fillRect(x+8,y+8,218,123);drawNdcLogo(ctx,x+117,y+69,164,90);}
+          ctx.strokeStyle=selected===i||hover===i?"#8ee1ff":"#526477";ctx.lineWidth=selected===i||hover===i?5:2;ctx.strokeRect(x,y,450,190);
+          ctx.textAlign="left";ctx.fillStyle="#fff";ctx.font="bold 29px system-ui";ctx.fillText(entries[i]?.title||"Composition "+(i+1),x+242,y+47,198);
+          ctx.fillStyle="#a9c4d9";ctx.font="20px system-ui";ctx.fillText(entries[i]?"SELECT TO PLAY":"Coming soon",x+242,y+83,198);
+          ctx.font="19px system-ui";ctx.fillText(entries[i]?"Quadraphonic audio":"North Devon College",x+242,y+115,198);
+          ctx.textAlign="center";
+        }
+        ctx.fillStyle="#d7e2ef";ctx.font="23px system-ui";ctx.fillText(status,512,589,950);tex.needsUpdate=true;
+      }
+      function stop(){
+        serial++;abort?.abort();abort=null;loading=false;
+        const now=filmAudio?.currentTime||0;
+        for(const v of voices){try{v.gain.gain.cancelScheduledValues(now);v.gain.gain.setTargetAtTime(0,now,.12);v.source.stop(now+.65);v.source.onended=()=>{v.source.disconnect();v.pan.disconnect();v.gain.disconnect();};}catch(_){}}
+        voices=[];
+        if(video){video.pause();video.removeAttribute("src");video.load();video=null;}videoTexture?.dispose();videoTexture=null;mat.map=null;mat.color.setHex(0x101521);mat.needsUpdate=true;
+      }
+      async function choose(i){
+        if(!inside||!entries[i])return;
+        stop();selected=i;loading=true;const token=serial;abort=new AbortController();const signal=abort.signal;
+        status="Loading audio and video…";draw();unlockFilmAudio();
+        try{
+          if(!filmAudio)throw Error("Audio unavailable");
+          await filmAudio.resume();
+          const base=root+entries[i].folder+"/",buffers=[];
+          for(const ch of ["L","R","Ls","Rs"]){
+            const response=await fetch(asset(base+ch+".mp3"),{signal});if(!response.ok)throw Error("Audio HTTP "+response.status);
+            buffers.push(await filmAudio.decodeAudioData(await response.arrayBuffer()));if(token!==serial||!inside)return;
+          }
+          const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.preload="auto";video=v;
+          await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error("Video timeout")),20000);v.addEventListener("canplay",()=>{clearTimeout(timeout);resolve();},{once:true});v.addEventListener("error",()=>{clearTimeout(timeout);reject(Error("Video unavailable"));},{once:true});signal.addEventListener("abort",()=>{clearTimeout(timeout);reject(Error("Cancelled"));},{once:true});v.src=asset(base+"video.mp4");v.load();});
+          if(token!==serial||!inside)return;
+          await v.play();if(token!==serial||!inside)return;
+          videoTexture=new THREE.VideoTexture(v);videoTexture.minFilter=THREE.LinearFilter;videoTexture.magFilter=THREE.LinearFilter;
+          if("colorSpace" in videoTexture&&THREE.SRGBColorSpace)videoTexture.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)videoTexture.encoding=THREE.sRGBEncoding;
+          mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
+          if(!limiter){limiter=filmAudio.createDynamicsCompressor();limiter.connect(filmAudio.destination);}
+          const start=filmAudio.currentTime+.08,duration=Math.min(...buffers.map(b=>b.duration));
+          const offsets=[[-1,1],[1,1],[-1,-1],[1,-1]];
+          buffers.forEach((buffer,j)=>{
+            const source=filmAudio.createBufferSource();source.buffer=buffer;source.loop=true;source.loopEnd=duration;
+            const pan=filmAudio.createPanner();pan.panningModel="HRTF";pan.distanceModel="inverse";pan.refDistance=2;pan.rolloffFactor=.45;pan.maxDistance=24;
+            const wp=localPoint(g,APOTHEM+SIDE/2+offsets[j][1]*(SIDE/2-.7),offsets[j][0]*(SIDE/2-.7));
+            pan.positionX.value=wp.x;pan.positionY.value=1.7;pan.positionZ.value=wp.y;
+            const gain=filmAudio.createGain();gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.42,start+.6);
+            source.connect(pan).connect(gain).connect(limiter);source.start(start);voices.push({source,pan,gain});
+          });
+          status="Playing · "+entries[i].title;draw();
+        }catch(err){if(token===serial){stop();status="Media unavailable · select to retry";draw();console.warn("Surround AV",err);}}
+        finally{if(token===serial)loading=false;}
+      }
+      function hit(){const h=ray.intersectObject(board,false)[0];if(!h?.uv)return -1;const x=h.uv.x*1024,y=(1-h.uv.y)*640;for(let i=0;i<4;i++){const a=52+(i%2)*470,b=138+Math.floor(i/2)*208;if(x>=a&&x<=a+450&&y>=b&&y<=b+190)return i;}return -1;}
+      function controllerHit(controller){controller.updateMatrixWorld(true);rotation.extractRotation(controller.matrixWorld);ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);ray.ray.direction.set(0,0,-1).applyMatrix4(rotation);return hit();}
+      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(inside&&!vrMenuActive&&renderer.xr.isPresenting){const i=controllerHit(controller);if(i>=0)choose(i);}}));
+      renderer.domElement.addEventListener("click",e=>{if(!inside||renderer.xr.isPresenting)return;const r=renderer.domElement.getBoundingClientRect();camera.updateMatrixWorld(true);ray.setFromCamera(isLocked?new THREE.Vector2(0,0):new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);const i=hit();if(i>=0)choose(i);});
+      const beams=vrMenuControllers.map(controller=>{const beam=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x8edfff,transparent:true,opacity:.8,depthTest:false}));beam.visible=false;beam.scale.z=5;beam.frustumCulled=false;controller.add(beam);return beam;});
+      function update(){
+        const q=roomCoordinates(g,yawObject.position),next=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
+        if(next!==inside){inside=next;board.visible=inside;panels.forEach(p=>p.visible=inside);if(!inside){stop();selected=-1;status="Select a composition";draw();}}
+        let h=-1;beams.forEach((beam,j)=>{beam.visible=inside&&renderer.xr.isPresenting&&!vrMenuActive;if(beam.visible){const i=controllerHit(vrMenuControllers[j]);if(i>=0)h=i;beam.material.color.setHex(i>=0?0xffffff:0x8edfff);}});if(h!==hover){hover=h;draw();}
+      }
+      draw();return {update};
+    })();
+
     function frame(time,xrFrame){
       const dt = Math.min(0.05, clock.getDelta());
 
@@ -3334,6 +3428,7 @@
       updateFilm(dt);
       musicInstallation.update(dt);
       ambient26.update(dt);
+      surroundAV.update();
       sensory.update(dt);
       diagnostics.beforeFrame();
       renderer.render(scene, camera);
