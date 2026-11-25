@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.64 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.65 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3330,9 +3330,29 @@
       screen(b,c,g.tangent.clone().negate());screen(d,a,g.tangent);screen(c,d,g.normal.clone().negate());
       const dl=localPoint(g,APOTHEM,-DOOR_W/2),dr=localPoint(g,APOTHEM,DOOR_W/2);
       screen(a,dl,g.normal,0,WALL_H,a,b);screen(dr,b,g.normal,0,WALL_H,a,b);screen(dl,dr,g.normal,DOOR_H,WALL_H,a,b);
+      // Permanent branded idle projection, visible from the lobby through the doorway.
+      const idleCanvas=document.createElement("canvas");idleCanvas.width=2400;idleCanvas.height=960;
+      const ic=idleCanvas.getContext("2d");
+      brandPanel(ic,2400,960,deptColor(g.department));
+      ic.fillStyle="#63b9e7";ic.fillRect(110,135,13,690);
+      ic.textAlign="left";ic.textBaseline="middle";
+      function idleText(text,x,y,size,color,weight=400){ic.fillStyle=color;ic.font=weight+" "+size+"px system-ui";ic.fillText(text,x,y);}
+      idleText("YEAR 2 MUSIC  /  SURROUND PROJECT",180,170,37,"#63b9e7",700);
+      idleText("SOUND",170,315,142,"#ffffff",800);
+      idleText("INSTALLATIONS",170,465,142,"#ffffff",800);
+      idleText("IMMERSIVE SOUND & VISION",180,602,58,"#d7e2ef",600);
+      idleText("Explore original quadraphonic audiovisual compositions.",180,718,38,"#a9bdd2");
+      idleText("Enter the room and select a composition to begin.",180,792,32,"#63b9e7",600);
+      ic.fillStyle="#e5e4df";ic.fillRect(2040,126,240,148);drawNdcLogo(ic,2160,200,200,116);
+      const idleTex=new THREE.CanvasTexture(idleCanvas);idleTex.minFilter=THREE.LinearFilter;idleTex.generateMipmaps=false;
+      if("colorSpace" in idleTex&&THREE.SRGBColorSpace)idleTex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)idleTex.encoding=THREE.sRGBEncoding;
+      const idleMat=new THREE.MeshBasicMaterial({map:idleTex,toneMapped:false,transparent:true,opacity:1,depthWrite:false});
+      const idleWall=new THREE.Mesh(new THREE.PlaneGeometry(SIDE-.04,WALL_H-.04),idleMat);
+      const idlePos=localPoint(g,APOTHEM+SIDE-WALL_T/2-.13,0);
+      idleWall.position.set(idlePos.x,WALL_H/2,idlePos.y);idleWall.rotation.y=Math.atan2(-g.normal.x,-g.normal.y);idleWall.renderOrder=5;scene.add(idleWall);
       // Selector stays in front of the rear projection.
       const board=new THREE.Mesh(new THREE.PlaneGeometry(4.5,2.8125),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
-      const p=localPoint(g,APOTHEM+SIDE-.34,0);board.position.set(p.x,Math.min(WALL_H-1.45,2.1),p.y);board.rotation.y=Math.atan2(-g.normal.x,-g.normal.y);board.visible=false;scene.add(board);
+      const p=localPoint(g,APOTHEM+SIDE/2,-SIDE/2+.34);board.position.set(p.x,Math.min(WALL_H-1.45,2.1),p.y);board.rotation.y=Math.atan2(g.tangent.x,g.tangent.y);board.visible=false;scene.add(board);
       const thumbs=entries.map(entry=>{if(!entry)return null;const img=new Image();img.onload=()=>draw();img.onerror=()=>draw();img.src=asset(root+entry.folder+"/thumb.jpg");return img;});
       const desktopSelector=document.createElement("div");
       desktopSelector.id="surroundAVSelector";
@@ -3424,9 +3444,12 @@
       renderer.domElement.addEventListener("click",e=>{if(!inside||renderer.xr.isPresenting)return;const r=renderer.domElement.getBoundingClientRect();yawObject.updateMatrixWorld(true);ray.setFromCamera(isLocked?new THREE.Vector2(0,0):new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);const i=hit();if(i>=0)choose(i);});
       const beams=vrMenuControllers.map(controller=>{const beam=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x8edfff,transparent:true,opacity:.8,depthTest:false}));beam.visible=false;beam.scale.z=5;beam.frustumCulled=false;controller.add(beam);return beam;});
       const listenerPosition=new THREE.Vector3();
-      function update(){
+      function update(dt){
         const q=roomCoordinates(g,yawObject.position),next=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
         if(next!==inside){inside=next;board.visible=inside;panels.forEach(p=>p.visible=inside);if(!inside){stop();selected=-1;status="Select a composition";draw();}}
+        const idleTarget=videoTexture?0:1;
+        idleMat.opacity+=(idleTarget-idleMat.opacity)*(1-Math.exp(-Math.max(0,dt)*6));
+        idleWall.visible=idleMat.opacity>.005;
         desktopSelector.style.display=inside&&!renderer.xr.isPresenting?"block":"none";
         // Use the actual headset/camera world position, not just its orientation.
         // Equal gain at the room centre; approaching a corner favours that speaker.
@@ -3497,7 +3520,7 @@
       updateFilm(dt);
       musicInstallation.update(dt);
       ambient26.update(dt);
-      surroundAV.update();
+      surroundAV.update(dt);
       sensory.update(dt);
       diagnostics.beforeFrame();
       renderer.render(scene, camera);
