@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.76 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.77 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -2603,7 +2603,16 @@
       brandText(cc,exhibit.credit||g.department.name,57,155,24,deptColor(g.department),500,910);
       const creditTex=new THREE.CanvasTexture(creditCanvas);
       const credit=new THREE.Mesh(new THREE.PlaneGeometry(3.6,.675),new THREE.MeshBasicMaterial({map:creditTex}));
-      credit.position.copy(screen.position);credit.position.y=.39;credit.rotation.y=rotation;if(!teachersRock)scene.add(credit);
+      if(woodsFilm){
+        // The enlarged 16:9 projection overlaps the original low credit plaque.
+        // Use the unoccupied entrance-right wall, clear of the screen and photographs.
+        const cp=localPoint(g,APOTHEM+WALL_T/2+.085,(SIDE+DOOR_W)/4);
+        credit.position.set(cp.x,1.65,cp.y);
+        credit.rotation.y=Math.atan2(g.normal.x,g.normal.y);
+        scene.add(credit);
+      }else{
+        credit.position.copy(screen.position);credit.position.y=.39;credit.rotation.y=rotation;if(!teachersRock)scene.add(credit);
+      }
 
       let video=null,texture=null,source=null,panner=null,gain=null,filmLimiter=null;
       let volume=0,status="",generation=0,exitElapsed=0,leaving=false;
