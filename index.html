@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.80 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.81 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3406,10 +3406,14 @@
       // Selector stays in front of the rear projection.
       const board=new THREE.Mesh(new THREE.PlaneGeometry(4.5,2.8125),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
       const p=localPoint(g,APOTHEM+SIDE/2,-SIDE/2+.34);board.position.set(p.x,Math.min(WALL_H-1.45,2.1),p.y);board.rotation.y=Math.atan2(g.tangent.x,g.tangent.y);board.visible=true;scene.add(board);
-      const oppositeBoard=board.clone();
-      const oppositePoint=localPoint(g,APOTHEM+SIDE/2,SIDE/2-.34);
+      // Construct the opposing selector independently with the exact mirrored wall transform.
+      const oppositeBoard=new THREE.Mesh(board.geometry,board.material);
+      const oppositePoint=localPoint(g,APOTHEM+SIDE/2,SIDE/2-.42);
       oppositeBoard.position.set(oppositePoint.x,board.position.y,oppositePoint.y);
-      oppositeBoard.rotation.y=Math.atan2(-g.tangent.x,-g.tangent.y);scene.add(oppositeBoard);
+      oppositeBoard.quaternion.copy(board.quaternion);
+      oppositeBoard.rotateY(Math.PI);
+      oppositeBoard.updateMatrixWorld(true);
+      scene.add(oppositeBoard);
       const menuBoards=[board,oppositeBoard];
       const thumbs=entries.map(entry=>{if(!entry)return null;const img=new Image();img.onload=()=>draw();img.onerror=()=>draw();img.src=asset(root+entry.folder+"/thumb.jpg");return img;});
       const desktopSelector=document.createElement("div");
