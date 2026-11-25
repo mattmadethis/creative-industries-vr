@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.67 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.68 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3478,45 +3478,6 @@
     })();
 
 
-    // Art & Design: launch the real facilities tour from a spare lobby bay.
-    const artTour=(()=>{
-      const url="https://my.matterport.com/show/?m=Lzk2UBssQjG",d=departments[2],g=galleryBySlot(2,2);
-      const p=localPoint(g,APOTHEM-WALL_T/2-.09,3.72),n=g.normal.clone().negate();
-      const canvas=document.createElement("canvas");canvas.width=1200;canvas.height=900;
-      const c=canvas.getContext("2d"),tex=signageTexture(canvas);
-      const panel=new THREE.Mesh(new THREE.PlaneGeometry(3.24,2.43),new THREE.MeshBasicMaterial({map:tex,toneMapped:false}));
-      panel.position.set(p.x,2.12,p.y);panel.rotation.y=Math.atan2(n.x,n.y);scene.add(panel);
-      const ray=new THREE.Raycaster(),rot=new THREE.Matrix4();
-      let hovered=false,launching=false;
-      function draw(){
-        brandPanel(c,1200,900,deptColor(d));
-        c.textAlign="left";c.textBaseline="alphabetic";
-        brandText(c,"ART & DESIGN",78,110,43,deptColor(d),750);
-        c.fillStyle="#e5e4df";c.fillRect(930,48,210,126);drawNdcLogo(c,1035,111,184,104);
-        brandText(c,"EXPLORE OUR",75,265,88,"#ffffff",800);
-        brandText(c,"FACILITIES",75,365,110,"#ffffff",800);
-        brandText(c,"Visit the real Art & Design department",78,466,39,"#d7e2ef",500);
-        brandText(c,"in an interactive Matterport 3D tour.",78,521,39,"#d7e2ef",500);
-        c.fillStyle=hovered?"#a7e5b8":"#72c28c";c.fillRect(78,600,1044,130);
-        brandText(c,"LAUNCH VIRTUAL TOUR  ↗",120,683,54,"#10231a",800);
-        brandText(c,"Click or point and pull the trigger",78,800,32,"#b5c8dc",500);
-        brandText(c,"Opens the external tour · use Back to return",78,850,27,"#b5c8dc",500);
-        tex.needsUpdate=true;
-      }
-      draw();
-      function inLobby(){const x=yawObject.position.x-d.origin.x,z=yawObject.position.z-d.origin.y;return exhibitionStarted&&Math.hypot(x,z)<APOTHEM+1;}
-      function hit(){return !!ray.intersectObject(panel,false).find(h=>h.distance<18);}
-      function controllerHit(controller){controller.updateMatrixWorld(true);rot.extractRotation(controller.matrixWorld);ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);ray.ray.direction.set(0,0,-1).applyMatrix4(rot);return hit();}
-      function launch(){if(launching)return;launching=true;const session=renderer.xr.getSession?.();if(session){session.end().catch(()=>{}).finally(()=>{location.assign(url);});}else{document.exitPointerLock?.();location.assign(url);}}
-      renderer.domElement.addEventListener("click",e=>{if(!inLobby()||renderer.xr.isPresenting)return;const r=renderer.domElement.getBoundingClientRect();yawObject.updateMatrixWorld(true);ray.setFromCamera(isLocked?new THREE.Vector2(0,0):new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);if(hit())launch();});
-      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(inLobby()&&renderer.xr.isPresenting&&!vrMenuActive&&controllerHit(controller))launch();}));
-      const beams=vrMenuControllers.map(controller=>{const beam=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:d.color,transparent:true,opacity:.85,depthTest:false}));beam.visible=false;beam.scale.z=5;beam.frustumCulled=false;controller.add(beam);return beam;});
-      const link=document.createElement("a");link.href=url;link.textContent="Explore Art & Design facilities ↗";link.style.cssText="display:none;position:fixed;bottom:20px;right:20px;z-index:14;background:#72c28c;color:#10231a;padding:12px 16px;border-radius:10px;font:700 14px system-ui;text-decoration:none";document.body.appendChild(link);
-      link.addEventListener("click",e=>{e.preventDefault();launch();});
-      function update(){const inside=inLobby();let active=false;beams.forEach((beam,i)=>{beam.visible=inside&&renderer.xr.isPresenting&&!vrMenuActive&&controllerHit(vrMenuControllers[i]);active=active||beam.visible;});if(active!==hovered){hovered=active;draw();}link.style.display=inside&&!renderer.xr.isPresenting?"block":"none";}
-      return {update};
-    })();
-
     function frame(time,xrFrame){
       const dt = Math.min(0.05, clock.getDelta());
 
@@ -3568,7 +3529,6 @@
       musicInstallation.update(dt);
       ambient26.update(dt);
       surroundAV.update(dt);
-      artTour.update();
       sensory.update(dt);
       diagnostics.beforeFrame();
       renderer.render(scene, camera);
