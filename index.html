@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.84 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.85 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3086,7 +3086,7 @@
     const ambient26=(()=>{
       const g=galleryBySlot(0,3),ROOT="https://raw.githubusercontent.com/northdevoncollege-music/ambient26/main/audio/";
       let selected=1,inside=false,serial=0,playing=[],cache=new Map(),loading=false,previousButtons=[false,false],hoveredButton=0;
-      let boardStatus="Four spatial audio layers",menuCollapsed=false;
+      let boardStatus="Four spatial audio layers";
 
       // Continuous animated wall surfaces: a single procedural shader spans all
       // walls in room-local coordinates. No video decoding or texture downloads.
@@ -3153,33 +3153,19 @@
       const pointerRay=new THREE.Raycaster(),pointerRotation=new THREE.Matrix4();
       const vrPointers=vrMenuControllers.map(controller=>{const beam=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0xc8b69a,transparent:true,opacity:.9,depthTest:false}));beam.visible=false;beam.scale.z=5;beam.frustumCulled=false;controller.add(beam);return beam;});
       const hud=document.createElement("div");hud.id="ambient26Selector";
-      hud.style.cssText="display:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:12;background:rgba(24,21,20,.96);color:#fff5e7;border:1px solid #ad9478;border-radius:22px;padding:15px 22px;font:13px system-ui;box-shadow:0 14px 35px #000a;max-width:92vw;text-align:center;backdrop-filter:blur(12px)";
-      hud.innerHTML='<div style="font-size:10px;letter-spacing:.24em;color:#b4a18b;margin-bottom:7px">YEAR 1 MUSIC · SURROUND PROJECT</div><div style="font-size:21px;font-weight:300;letter-spacing:.08em;margin-bottom:12px">AMBIENT MOODS</div><div style="display:flex;align-items:center;justify-content:center;gap:15px"><button type="button" id="ambient26Prev" aria-label="Previous ambient mood" style="background:#352b28;border:1px solid #9a8168;color:#f7e9d3;border-radius:18px;padding:9px 16px;cursor:pointer">◀</button><span id="ambient26Name" style="font-variant-numeric:tabular-nums;letter-spacing:.17em;color:#e8d2b0;min-width:85px">01 / 12</span><button type="button" id="ambient26Next" aria-label="Next ambient mood" style="background:#352b28;border:1px solid #9a8168;color:#f7e9d3;border-radius:18px;padding:9px 16px;cursor:pointer">▶</button></div><small id="ambient26Status" style="display:block;color:#b6a491;margin-top:10px">Four spatial audio layers</small>';
+      hud.style.cssText="display:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:12;background:#101a28ee;color:#fff;border:1px solid #63b9e7;border-radius:8px;padding:15px 22px;font:13px system-ui;box-shadow:0 14px 35px #000a;max-width:92vw;text-align:center;backdrop-filter:blur(12px)";
+      hud.innerHTML='<div style="font-size:10px;letter-spacing:.24em;color:#63b9e7;margin-bottom:7px">YEAR 1 MUSIC · SURROUND PROJECT</div><div style="font-size:21px;font-weight:300;letter-spacing:.08em;margin-bottom:12px">AMBIENT MOODS</div><div style="display:flex;align-items:center;justify-content:center;gap:15px"><button type="button" id="ambient26Prev" aria-label="Previous ambient mood" style="background:#23384d;border:1px solid #526d88;color:#ffffff;border-radius:18px;padding:9px 16px;cursor:pointer">◀</button><span id="ambient26Name" style="font-variant-numeric:tabular-nums;letter-spacing:.17em;color:#d7e2ef;min-width:85px">01 / 12</span><button type="button" id="ambient26Next" aria-label="Next ambient mood" style="background:#23384d;border:1px solid #526d88;color:#ffffff;border-radius:18px;padding:9px 16px;cursor:pointer">▶</button></div><small id="ambient26Status" style="display:block;color:#b5c8dc;margin-top:10px">Four spatial audio layers</small>';
       document.body.appendChild(hud);
       const label=hud.querySelector("#ambient26Name"),status=hud.querySelector("#ambient26Status");
       const canvas=document.createElement("canvas");canvas.width=1024;canvas.height=512;
       const ctx=canvas.getContext("2d"),texture=new THREE.CanvasTexture(canvas);
       texture.minFilter=THREE.LinearFilter;texture.generateMipmaps=false;
-      const board=new THREE.Mesh(new THREE.PlaneGeometry(4.8,2.4),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true,depthWrite:false,depthTest:false}));
-      const bp=localPoint(g,APOTHEM+SIDE-.25,0);board.position.set(bp.x,2.65,bp.y);
+      const board=new THREE.Mesh(new THREE.PlaneGeometry(3.0,1.5),new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide,toneMapped:false}));
+      const bp=localPoint(g,APOTHEM+SIDE-WALL_T/2-.22,-SIDE*.29);board.position.set(bp.x,WALL_H*2/3,bp.y);
       board.rotation.y=Math.atan2(-g.normal.x,-g.normal.y);board.renderOrder=12;board.visible=false;scene.add(board);
-      const miniCanvas=document.createElement("canvas");miniCanvas.width=512;miniCanvas.height=128;
-      const mc=miniCanvas.getContext("2d"),miniTex=new THREE.CanvasTexture(miniCanvas);
-      const miniBoard=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.3),new THREE.MeshBasicMaterial({map:miniTex,side:THREE.FrontSide,depthTest:true,toneMapped:false}));
-      miniBoard.position.copy(board.position);miniBoard.position.y=.65;miniBoard.quaternion.copy(board.quaternion);miniBoard.visible=false;scene.add(miniBoard);
-      const hudToggle=document.createElement("button");hudToggle.type="button";hudToggle.textContent="Minimise menu";hudToggle.style.cssText="margin-top:7px;padding:5px 12px";hud.appendChild(hudToggle);
-      const hudControls=Array.from(hud.children).filter(n=>n!==hudToggle);
-      function setMenuCollapsed(value){
-        menuCollapsed=value;hoveredButton=0;board.visible=inside&&!value;miniBoard.visible=inside&&value;
-        hudControls.forEach(n=>n.style.display=value?"none":"");if(!value)hud.querySelector("#ambient26Prev").parentElement.style.display="flex";
-        hudToggle.textContent=value?"Show moods":"Minimise menu";draw();
-      }
-      hudToggle.addEventListener("click",()=>setMenuCollapsed(!menuCollapsed));
       function draw(){
-        mc.fillStyle="#101a28";mc.fillRect(0,0,512,128);mc.strokeStyle=hoveredButton===2?"#ffffff":"#63b9e7";mc.lineWidth=5;mc.strokeRect(3,3,506,122);
-        mc.fillStyle="#fff";mc.font="600 42px system-ui";mc.textAlign="center";mc.textBaseline="middle";mc.fillText("Show menu",256,64);miniTex.needsUpdate=true;
         ctx.clearRect(0,0,1024,512);
-        ctx.save();ctx.beginPath();ctx.roundRect(5,5,1014,502,76);ctx.clip();
+        ctx.save();
         brandPanel(ctx,1024,512,deptColor(g.department));
         ctx.strokeStyle=exhibitionBrand.rule;ctx.lineWidth=2;ctx.strokeRect(18,18,988,476);
         ctx.textAlign="center";
@@ -3190,8 +3176,8 @@
         ctx.fillStyle="#b5c8dc";ctx.font="24px system-ui";ctx.fillText("POINT AT A CONTROL AND PULL THE TRIGGER",512,387);
         for(const [direction,x,labelText] of [[-1,112,"◀  PREVIOUS"],[1,652,"NEXT  ▶"]]){
           const active=hoveredButton===direction;
-          ctx.fillStyle=active?"#315c77":"#23384d";ctx.beginPath();ctx.roundRect(x,424,260,64,23);ctx.fill();
-          ctx.strokeStyle=active?"#a5dfff":"#526d88";ctx.lineWidth=active?5:2;ctx.stroke();
+          ctx.fillStyle=active?"#315c77":"#23384d";ctx.fillRect(x,424,260,64);
+          ctx.strokeStyle=active?"#a5dfff":"#526d88";ctx.lineWidth=active?5:2;ctx.strokeRect(x,424,260,64);
           ctx.fillStyle=active?"#ffffff":"#d7e2ef";ctx.font="bold 27px system-ui";ctx.fillText(labelText,x+130,465);
         }
         ctx.restore();texture.needsUpdate=true;label.textContent=String(selected).padStart(2,"0")+" / 12";
@@ -3311,12 +3297,11 @@
             playing.push({source,panner,gain,fadeStart:commonStart,fadeUntil:commonStart+CROSSFADE});
           });
           status.textContent="Playing · move around to explore the mix";
-          boardStatus="Playing · move around to explore the mix";setMenuCollapsed(true);
-        }catch(err){if(token===serial){status.textContent="Audio unavailable — select another scene";boardStatus="Audio unavailable · choose another scene";setMenuCollapsed(false);console.warn("Ambient26 audio:",err);}}
+          boardStatus="Playing · move around to explore the mix";draw();
+        }catch(err){if(token===serial){status.textContent="Audio unavailable — select another scene";boardStatus="Audio unavailable · choose another scene";draw();console.warn("Ambient26 audio:",err);}}
         finally{if(token===serial)loading=false;}
       }
       function choose(delta){
-        setMenuCollapsed(false);
         const oldTheme=wallUniforms.uTheme.value;
         selected=(selected-1+delta+12)%12+1;
         visualBlendFrom=oldTheme;
@@ -3329,8 +3314,8 @@
       hud.querySelector("#ambient26Prev").addEventListener("click",()=>choose(-1));
       hud.querySelector("#ambient26Next").addEventListener("click",()=>choose(1));
       addEventListener("keydown",e=>{if(!inside||renderer.xr.isPresenting||e.repeat||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName||""))return;if(e.code==="KeyQ"||e.code==="KeyE"){e.preventDefault();choose(e.code==="KeyE"?1:-1);}},true);
-      function pointerHit(controller){controller.updateMatrixWorld(true);pointerRotation.extractRotation(controller.matrixWorld);pointerRay.ray.origin.setFromMatrixPosition(controller.matrixWorld);pointerRay.ray.direction.set(0,0,-1).applyMatrix4(pointerRotation);if(menuCollapsed)return pointerRay.intersectObject(miniBoard,false).length?2:null;const hit=pointerRay.intersectObject(board,false)[0];if(!hit||!hit.uv)return null;const x=hit.uv.x*1024,y=(1-hit.uv.y)*512;if(y>=424&&y<=488&&x>=112&&x<=372)return -1;if(y>=424&&y<=488&&x>=652&&x<=912)return 1;return 0;}
-      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(!inside||!renderer.xr.isPresenting||vrMenuActive)return;const delta=pointerHit(controller);if(delta===2)setMenuCollapsed(false);else if(delta)choose(delta);}));
+      function pointerHit(controller){controller.updateMatrixWorld(true);pointerRotation.extractRotation(controller.matrixWorld);pointerRay.ray.origin.setFromMatrixPosition(controller.matrixWorld);pointerRay.ray.direction.set(0,0,-1).applyMatrix4(pointerRotation);const hit=pointerRay.intersectObject(board,false)[0];if(!hit||!hit.uv)return null;const x=hit.uv.x*1024,y=(1-hit.uv.y)*512;if(y>=424&&y<=488&&x>=112&&x<=372)return -1;if(y>=424&&y<=488&&x>=652&&x<=912)return 1;return 0;}
+      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(!inside||!renderer.xr.isPresenting||vrMenuActive)return;const delta=pointerHit(controller);if(delta)choose(delta);}));
       const listenerHead=new THREE.Vector3(),listenerQuat=new THREE.Quaternion(),listenerForward=new THREE.Vector3(),listenerUp=new THREE.Vector3();
       function update(dt){
         const q=roomCoordinates(g,yawObject.position);
@@ -3338,11 +3323,11 @@
         if(exhibitionStarted){visualTime+=dt;wallUniforms.uTime.value=visualTime;wallUniforms.uFade.value=visualFade;wallUniforms.uBlend.value=Math.min(1,Math.max(0,(performance.now()/1000-visualBlendStart)/VISUAL_TRANSITION));}
         wallSurfaces.forEach(mesh=>mesh.visible=visualFade>.005);
         const now=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
-        board.visible=now&&!menuCollapsed;miniBoard.visible=now&&menuCollapsed;
-        if(now!==inside){inside=now;hud.style.display=inside&&!renderer.xr.isPresenting?"block":"none";if(inside)start();else{serial++;stop(2.5);loading=false;setMenuCollapsed(false);}}
+        board.visible=now;
+        if(now!==inside){inside=now;hud.style.display=inside&&!renderer.xr.isPresenting?"block":"none";if(inside)start();else{serial++;stop(2.5);loading=false;draw();}}
         if(inside){
           hud.style.display=renderer.xr.isPresenting?"none":"block";
-          if(renderer.xr.isPresenting){let activeHover=0;vrMenuControllers.forEach((controller,i)=>{const beam=vrPointers[i];beam.visible=!vrMenuActive;if(!vrMenuActive){const hit=pointerHit(controller);if(hit)activeHover=hit;beam.visible=!menuCollapsed||!!hit;beam.material.color.setHex(hit?0xf4d9a9:0xc8b69a);}});if(activeHover!==hoveredButton){hoveredButton=activeHover;draw();}}else{if(hoveredButton){hoveredButton=0;draw();}vrPointers.forEach(beam=>beam.visible=false);}
+          if(renderer.xr.isPresenting){let activeHover=0;vrMenuControllers.forEach((controller,i)=>{const beam=vrPointers[i];beam.visible=!vrMenuActive;if(!vrMenuActive){const hit=pointerHit(controller);if(hit)activeHover=hit;beam.visible=!!hit;beam.material.color.setHex(hit?0xf4d9a9:0xc8b69a);}});if(activeHover!==hoveredButton){hoveredButton=activeHover;draw();}}else{if(hoveredButton){hoveredButton=0;draw();}vrPointers.forEach(beam=>beam.visible=false);}
         }else{previousButtons=[false,false];if(hoveredButton){hoveredButton=0;draw();}vrPointers.forEach(beam=>beam.visible=false);}
         if(!filmAudio||!playing.length)return;
         // Shared listener pose is set once per frame by updateFilm.
