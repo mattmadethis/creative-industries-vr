@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.68 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.69 · 24 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3302,7 +3302,7 @@
       const ctx=canvas.getContext("2d"),tex=new THREE.CanvasTexture(canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
       if("colorSpace" in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
       const [a,b,c,d]=g.vertices;
-      const mat=new THREE.MeshBasicMaterial({color:0x101521,side:THREE.FrontSide});
+      const mat=new THREE.MeshBasicMaterial({color:0x204e78,side:THREE.FrontSide});
       // One undistorted cover projection per wall. The three entrance pieces
       // share a single full-wall UV coordinate system, leaving the doorway open.
       function screen(a,b,inward,low=0,high=WALL_H,wallA=a,wallB=b){
@@ -3321,7 +3321,7 @@
         }
         const mesh=new THREE.Mesh(geometry,mat);
         mesh.userData.projectionUV=base;mesh.userData.wallAspect=wallWidth/WALL_H;
-        mesh.position.set(p.x,(low+high)/2,p.y);mesh.rotation.y=Math.atan2(inward.x,inward.y);mesh.visible=false;scene.add(mesh);panels.push(mesh);
+        mesh.position.set(p.x,(low+high)/2,p.y);mesh.rotation.y=Math.atan2(inward.x,inward.y);mesh.visible=true;scene.add(mesh);panels.push(mesh);
       }
       function fitProjection(video){
         const aspect=video.videoWidth/video.videoHeight;
@@ -3359,7 +3359,12 @@
       idleWall.position.set(idlePos.x,WALL_H/2,idlePos.y);idleWall.rotation.y=Math.atan2(-g.normal.x,-g.normal.y);idleWall.renderOrder=5;scene.add(idleWall);
       // Selector stays in front of the rear projection.
       const board=new THREE.Mesh(new THREE.PlaneGeometry(4.5,2.8125),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
-      const p=localPoint(g,APOTHEM+SIDE/2,-SIDE/2+.34);board.position.set(p.x,Math.min(WALL_H-1.45,2.1),p.y);board.rotation.y=Math.atan2(g.tangent.x,g.tangent.y);board.visible=false;scene.add(board);
+      const p=localPoint(g,APOTHEM+SIDE/2,-SIDE/2+.34);board.position.set(p.x,Math.min(WALL_H-1.45,2.1),p.y);board.rotation.y=Math.atan2(g.tangent.x,g.tangent.y);board.visible=true;scene.add(board);
+      const oppositeBoard=board.clone();
+      const oppositePoint=localPoint(g,APOTHEM+SIDE/2,SIDE/2-.34);
+      oppositeBoard.position.set(oppositePoint.x,board.position.y,oppositePoint.y);
+      oppositeBoard.rotation.y=Math.atan2(-g.tangent.x,-g.tangent.y);scene.add(oppositeBoard);
+      const menuBoards=[board,oppositeBoard];
       const thumbs=entries.map(entry=>{if(!entry)return null;const img=new Image();img.onload=()=>draw();img.onerror=()=>draw();img.src=asset(root+entry.folder+"/thumb.jpg");return img;});
       const desktopSelector=document.createElement("div");
       desktopSelector.id="surroundAVSelector";
@@ -3403,7 +3408,7 @@
         const now=filmAudio?.currentTime||0;
         for(const v of voices){try{v.gain.gain.cancelScheduledValues(now);v.gain.gain.setTargetAtTime(0,now,.12);v.source.stop(now+.65);v.source.onended=()=>{v.source.disconnect();v.pan.disconnect();v.gain.disconnect();v.reflections.forEach(n=>n.disconnect());};}catch(_){}}
         voices=[];
-        if(video){video.pause();video.removeAttribute("src");video.load();video=null;}videoTexture?.dispose();videoTexture=null;mat.map=null;mat.color.setHex(0x101521);mat.needsUpdate=true;
+        if(video){video.pause();video.removeAttribute("src");video.load();video=null;}videoTexture?.dispose();videoTexture=null;mat.map=null;mat.color.setHex(0x204e78);mat.needsUpdate=true;
       }
       async function choose(i){
         if(!inside||!entries[i])return;
@@ -3446,7 +3451,7 @@
         }catch(err){if(token===serial){stop();status="Playback error · "+(err.message||"select to retry");draw();console.warn("Surround AV",err);}}
         finally{if(token===serial){loading=false;draw();}}
       }
-      function hit(){const h=ray.intersectObject(board,false)[0];if(!h?.uv)return -1;const x=h.uv.x*1024,y=(1-h.uv.y)*640;for(let i=0;i<4;i++){const a=52+(i%2)*470,b=138+Math.floor(i/2)*208;if(x>=a&&x<=a+450&&y>=b&&y<=b+190)return i;}return -1;}
+      function hit(){const h=ray.intersectObjects(menuBoards,false)[0];if(!h?.uv)return -1;const x=h.uv.x*1024,y=(1-h.uv.y)*640;for(let i=0;i<4;i++){const a=52+(i%2)*470,b=138+Math.floor(i/2)*208;if(x>=a&&x<=a+450&&y>=b&&y<=b+190)return i;}return -1;}
       function controllerHit(controller){controller.updateMatrixWorld(true);rotation.extractRotation(controller.matrixWorld);ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);ray.ray.direction.set(0,0,-1).applyMatrix4(rotation);return hit();}
       vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(inside&&!vrMenuActive&&renderer.xr.isPresenting){const i=controllerHit(controller);if(i>=0)choose(i);}}));
       renderer.domElement.addEventListener("click",e=>{if(!inside||renderer.xr.isPresenting)return;const r=renderer.domElement.getBoundingClientRect();yawObject.updateMatrixWorld(true);ray.setFromCamera(isLocked?new THREE.Vector2(0,0):new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);const i=hit();if(i>=0)choose(i);});
@@ -3454,7 +3459,7 @@
       const listenerPosition=new THREE.Vector3();
       function update(dt){
         const q=roomCoordinates(g,yawObject.position),next=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
-        if(next!==inside){inside=next;board.visible=inside;panels.forEach(p=>p.visible=inside);if(!inside){stop();selected=-1;status="Select a composition";draw();}}
+        if(next!==inside){inside=next;if(!inside){stop();selected=-1;status="Select a composition";draw();}}
         const idleTarget=videoTexture?0:1;
         idleMat.opacity+=(idleTarget-idleMat.opacity)*(1-Math.exp(-Math.max(0,dt)*6));
         idleWall.visible=idleMat.opacity>.005;
