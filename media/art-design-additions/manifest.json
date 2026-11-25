@@ -1,0 +1,50 @@
+[
+  {
+    "room": 3,
+    "order": 3,
+    "artist": "Anya Muzard Clark",
+    "title": "Velum Priscum Fulgoris",
+    "materials": "Beading and embroidery",
+    "body": "A multimedia piece incorporating beading and embroidery techniques. With the background drawing inspiration from the vast blue ocean, I have created a renaissance style portrait to highlight the natural and innocent beauty of the often overlooked, ordinary woman. A woman who may not receive the same admiration in today’s world, something many women can unfortunately relate to.",
+    "file": "anya-muzard-clark.jpg",
+    "aspectRatio": 0.7105,
+    "width": 1421,
+    "height": 2000
+  },
+  {
+    "room": 1,
+    "order": 3,
+    "artist": "Billy Randall",
+    "title": "Tribal",
+    "materials": "Fine Art, Carving and Graphic Design",
+    "body": "This piece is of the beaver inspired by traditional Haida art from Canada BC. It is a symbol for persistence and determination. I also painted on a piece of hide inspired by the painting on hide created by Chief Kicking Bear, at The Battle Of Bighorn. The colours signify RED for blood spilt, WHITE for the spirit, BLUE for the sky and BLACK for ongoing war preparation.",
+    "file": "billy-randall.jpg",
+    "aspectRatio": 1.597444089456869,
+    "width": 2000,
+    "height": 1252
+  },
+  {
+    "room": 2,
+    "order": 3,
+    "artist": "Felix Pacey",
+    "title": "The Hive Mindset",
+    "materials": "Spray painted mural",
+    "body": "This is a mural of humanoid bee-creatures locked in routine – part human, part drone.",
+    "file": "felix-pacey.jpg",
+    "aspectRatio": 0.5383333333333333,
+    "width": 969,
+    "height": 1800
+  },
+  {
+    "room": 4,
+    "order": 3,
+    "artist": "Jessica Davie",
+    "title": "Develop Or Destroy?",
+    "materials": "100 × 100 canvas with oil paints",
+    "body": "My piece depicts the reality of deforestation and the impact on endangered species in our world today, plus the large economic growth of the cities, I have portrayed this by showing what there is now (the city) and what used to be there (the forest) including a very known endangered species the Tiger which can highlight most endangered species and what they go through in today’s developing world.",
+    "file": "jessica-davie.jpg",
+    "aspectRatio": 1.0,
+    "width": 1800,
+    "height": 1800
+  }
+]
