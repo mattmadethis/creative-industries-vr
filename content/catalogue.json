@@ -338,7 +338,7 @@
           "aspectRatio": 0.9027777777777778
         },
         {
-          "position": "right",
+          "position": "back",
           "type": "image",
           "file": "media/performing-arts-assets/legally-blonde/02.webp",
           "title": "Finale",
@@ -426,7 +426,7 @@
           "aspectRatio": 0.9933333333333333
         },
         {
-          "position": "entrance-left",
+          "position": "back",
           "type": "image",
           "file": "media/performing-arts-assets/dick-whittington/05.webp",
           "title": "The Finale",
@@ -600,7 +600,7 @@
           "aspectRatio": 1.5
         },
         {
-          "position": "right-extra",
+          "position": "back",
           "type": "image",
           "file": "media/performing-arts-assets/life-raft/04.webp",
           "title": "The Rescue",
