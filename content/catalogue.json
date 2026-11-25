@@ -265,20 +265,185 @@
     {
       "department": "performing-arts",
       "room": 1,
-      "title": "Stage design",
-      "exhibits": []
+      "title": "Induction Project",
+      "exhibits": [
+        {
+          "position": "left",
+          "type": "image",
+          "file": "media/performing-arts-assets/induction-project/01.webp",
+          "title": "Production photograph 1",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Induction Project",
+          "aspectRatio": 0.7322222222222222
+        },
+        {
+          "position": "right",
+          "type": "image",
+          "file": "media/performing-arts-assets/induction-project/02.webp",
+          "title": "Production photograph 2",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Induction Project",
+          "aspectRatio": 0.9127777777777778
+        },
+        {
+          "position": "left-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/induction-project/03.webp",
+          "title": "Finale",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Induction Project",
+          "aspectRatio": 1.361573373676248
+        },
+        {
+          "position": "right-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/induction-project/04.webp",
+          "title": "My Dream Role",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Induction Project",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "entrance-left",
+          "type": "image",
+          "file": "media/performing-arts-assets/induction-project/05.webp",
+          "title": "The Audition",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Induction Project",
+          "aspectRatio": 0.6666666666666666
+        },
+        {
+          "position": "entrance-right",
+          "type": "image",
+          "file": "media/performing-arts-assets/induction-project/06.webp",
+          "title": "The Company",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Induction Project",
+          "aspectRatio": 1.4622258326563768
+        }
+      ]
     },
     {
       "department": "performing-arts",
       "room": 2,
-      "title": "Performance",
-      "exhibits": []
+      "title": "Legally Blonde",
+      "exhibits": [
+        {
+          "position": "left",
+          "type": "image",
+          "file": "media/performing-arts-assets/legally-blonde/01.webp",
+          "title": "Elle and Emmett",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Legally Blonde",
+          "aspectRatio": 0.9027777777777778
+        },
+        {
+          "position": "right",
+          "type": "image",
+          "file": "media/performing-arts-assets/legally-blonde/02.webp",
+          "title": "Finale",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Legally Blonde",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "left-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/legally-blonde/03.webp",
+          "title": "Omigod You Guys!",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Legally Blonde",
+          "aspectRatio": 1.820020222446916
+        },
+        {
+          "position": "right-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/legally-blonde/04.webp",
+          "title": "Paulette",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Legally Blonde",
+          "aspectRatio": 1.3363028953229399
+        },
+        {
+          "position": "entrance-left",
+          "type": "image",
+          "file": "media/performing-arts-assets/legally-blonde/05.webp",
+          "title": "Professor Callahan",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Legally Blonde",
+          "aspectRatio": 0.6666666666666666
+        },
+        {
+          "position": "entrance-right",
+          "type": "image",
+          "file": "media/performing-arts-assets/legally-blonde/06.webp",
+          "title": "Whipped Into Shape",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Legally Blonde",
+          "aspectRatio": 1.000555864369094
+        }
+      ]
     },
     {
       "department": "performing-arts",
       "room": 3,
-      "title": "Dance",
-      "exhibits": []
+      "title": "Dick Whittington Pantomime",
+      "exhibits": [
+        {
+          "position": "left",
+          "type": "image",
+          "file": "media/performing-arts-assets/dick-whittington/01.webp",
+          "title": "Dick and Alice",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Dick Whittington Pantomime",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "right",
+          "type": "image",
+          "file": "media/performing-arts-assets/dick-whittington/02.webp",
+          "title": "Dick and The Ensemble",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Dick Whittington Pantomime",
+          "aspectRatio": 1.355421686746988
+        },
+        {
+          "position": "left-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/dick-whittington/03.webp",
+          "title": "Fairy Bow Bells and Queen Rat",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Dick Whittington Pantomime",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "right-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/dick-whittington/04.webp",
+          "title": "The Ensemble",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Dick Whittington Pantomime",
+          "aspectRatio": 0.9933333333333333
+        },
+        {
+          "position": "entrance-left",
+          "type": "image",
+          "file": "media/performing-arts-assets/dick-whittington/05.webp",
+          "title": "The Finale",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Dick Whittington Pantomime",
+          "aspectRatio": 1.38996138996139
+        },
+        {
+          "position": "entrance-right",
+          "type": "image",
+          "file": "media/performing-arts-assets/dick-whittington/06.webp",
+          "title": "The Plan",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Dick Whittington Pantomime",
+          "aspectRatio": 1.0594467333725721
+        }
+      ]
     },
     {
       "department": "performing-arts",
@@ -288,100 +453,180 @@
         {
           "position": "left",
           "type": "image",
-          "file": "media/performing-arts/into-the-woods/into-the-woods-01.webp",
-          "title": "On stage",
+          "file": "media/performing-arts-assets/into-the-woods/01.webp",
+          "title": "Little Red Riding Hood",
           "artist": "North Devon College Performing Arts",
           "credit": "Into the Woods",
-          "description": "Production photography from Into the Woods.",
-          "aspectRatio": 1.7777777777777777,
-          "thumbnail": "media/performing-arts/into-the-woods/thumbs/into-the-woods-01.webp",
-          "thumbnailSourceHash": "3813c555944c51c5aa73fda32323079992745511b97d75c4f754f088590ffa3d"
-        },
-        {
-          "position": "left-extra",
-          "type": "image",
-          "file": "media/performing-arts/into-the-woods/into-the-woods-03.webp",
-          "title": "A scene with the harp",
-          "artist": "North Devon College Performing Arts",
-          "credit": "Into the Woods",
-          "description": "Production photography from Into the Woods.",
-          "aspectRatio": 0.75,
-          "thumbnail": "media/performing-arts/into-the-woods/thumbs/into-the-woods-03.webp",
-          "thumbnailSourceHash": "eac2d6a01128615ce0574186e8da5bd52b60571e07c640dbef18623e60ad0cb3"
+          "aspectRatio": 0.6666666666666666
         },
         {
           "position": "right",
           "type": "image",
-          "file": "media/performing-arts/into-the-woods/into-the-woods-02.webp",
-          "title": "An encounter in the woods",
+          "file": "media/performing-arts-assets/into-the-woods/02.webp",
+          "title": "Prologue",
           "artist": "North Devon College Performing Arts",
           "credit": "Into the Woods",
-          "description": "Production photography from Into the Woods.",
-          "aspectRatio": 1.7777777777777777,
-          "thumbnail": "media/performing-arts/into-the-woods/thumbs/into-the-woods-02.webp",
-          "thumbnailSourceHash": "ffb221ba9db4f642f6c166a21e7ca650a3d15b8968d2adc3d013aeb9097957ca"
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "left-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/into-the-woods/03.webp",
+          "title": "The Baker and The Baker's Wife",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Into the Woods",
+          "aspectRatio": 0.6666666666666666
         },
         {
           "position": "right-extra",
           "type": "image",
-          "file": "media/performing-arts/into-the-woods/into-the-woods-04.webp",
-          "title": "A moment between characters",
+          "file": "media/performing-arts-assets/into-the-woods/04.webp",
+          "title": "The Princes",
           "artist": "North Devon College Performing Arts",
           "credit": "Into the Woods",
-          "description": "Production photography from Into the Woods.",
-          "aspectRatio": 0.75,
-          "thumbnail": "media/performing-arts/into-the-woods/thumbs/into-the-woods-04.webp",
-          "thumbnailSourceHash": "24fe44a57a336357c94deab2cbd55aeab296364605d7e755ee46c7eeffea0692"
+          "aspectRatio": 1.5
         },
         {
           "position": "entrance-left",
           "type": "image",
-          "file": "media/performing-arts/into-the-woods/into-the-woods-06.webp",
-          "title": "An ensemble scene",
+          "file": "media/performing-arts-assets/into-the-woods/05.webp",
+          "title": "The Witch and Rapunzel",
           "artist": "North Devon College Performing Arts",
           "credit": "Into the Woods",
-          "description": "Production photography from Into the Woods.",
-          "aspectRatio": 1.7777777777777777,
-          "thumbnail": "media/performing-arts/into-the-woods/thumbs/into-the-woods-06.webp",
-          "thumbnailSourceHash": "e9440e1a88907d87a7106f12b7b28a2acaed661cfc23e2cdf86fd2f6a8a40390"
-        },
-        {
-          "position": "entrance-right",
-          "type": "image",
-          "file": "media/performing-arts/into-the-woods/into-the-woods-07.webp",
-          "title": "Two characters in performance",
-          "artist": "North Devon College Performing Arts",
-          "credit": "Into the Woods",
-          "description": "Production photography from Into the Woods.",
-          "aspectRatio": 0.75,
-          "thumbnail": "media/performing-arts/into-the-woods/thumbs/into-the-woods-07.webp",
-          "thumbnailSourceHash": "e4cca20d01cef557c854298c56911f88b2a779231fdff463cd74d6169889c5af"
+          "aspectRatio": 1.5
         },
         {
           "position": "back",
-          "type": "image",
-          "file": "media/performing-arts/into-the-woods/into-the-woods-05.webp",
-          "title": "The cast",
+          "type": "video",
+          "file": "media/performing-arts-assets/into-the-woods/epilogue.mp4",
+          "title": "Epilogue",
           "artist": "North Devon College Performing Arts",
           "credit": "Into the Woods",
-          "description": "Production photography from Into the Woods.",
-          "aspectRatio": 1.9047619047619047,
-          "thumbnail": "media/performing-arts/into-the-woods/thumbs/into-the-woods-05.webp",
-          "thumbnailSourceHash": "9ff20cd3e72decd207521cd2e2af98a8d403def3c109409b8c23cf0a2fc74268"
+          "aspectRatio": 1.7777777777777777
         }
       ]
     },
     {
       "department": "performing-arts",
       "room": 5,
-      "title": "Performance practice",
-      "exhibits": []
+      "title": "Rebellious Women",
+      "exhibits": [
+        {
+          "position": "left",
+          "type": "image",
+          "file": "media/performing-arts-assets/rebellious-women/01.webp",
+          "title": "Edith and Bertha",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Rebellious Women",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "right",
+          "type": "image",
+          "file": "media/performing-arts-assets/rebellious-women/02.webp",
+          "title": "Emily Davison and Constance Lytton",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Rebellious Women",
+          "aspectRatio": 0.6666666666666666
+        },
+        {
+          "position": "left-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/rebellious-women/03.webp",
+          "title": "Mr and Mrs Begbie",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Rebellious Women",
+          "aspectRatio": 0.6666666666666666
+        },
+        {
+          "position": "right-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/rebellious-women/04.webp",
+          "title": "The First Meeting",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Rebellious Women",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "entrance-left",
+          "type": "image",
+          "file": "media/performing-arts-assets/rebellious-women/05.webp",
+          "title": "The Protest",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Rebellious Women",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "entrance-right",
+          "type": "image",
+          "file": "media/performing-arts-assets/rebellious-women/06.webp",
+          "title": "The Vicar",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Rebellious Women",
+          "aspectRatio": 0.6666666666666666
+        }
+      ]
     },
     {
       "department": "performing-arts",
       "room": 6,
-      "title": "Showcase",
-      "exhibits": []
+      "title": "Life Raft",
+      "exhibits": [
+        {
+          "position": "left",
+          "type": "image",
+          "file": "media/performing-arts-assets/life-raft/01.webp",
+          "title": "Foxy's Discovery",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Life Raft",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "right",
+          "type": "image",
+          "file": "media/performing-arts-assets/life-raft/02.webp",
+          "title": "Margret",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Life Raft",
+          "aspectRatio": 0.6666666666666666
+        },
+        {
+          "position": "left-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/life-raft/03.webp",
+          "title": "The Rationing",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Life Raft",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "right-extra",
+          "type": "image",
+          "file": "media/performing-arts-assets/life-raft/04.webp",
+          "title": "The Rescue",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Life Raft",
+          "aspectRatio": 1.5
+        },
+        {
+          "position": "entrance-left",
+          "type": "image",
+          "file": "media/performing-arts-assets/life-raft/05.webp",
+          "title": "The Wedding Part 1",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Life Raft",
+          "aspectRatio": 0.6177777777777778
+        },
+        {
+          "position": "entrance-right",
+          "type": "image",
+          "file": "media/performing-arts-assets/life-raft/06.webp",
+          "title": "The Wedding Part 2",
+          "artist": "North Devon College Performing Arts",
+          "credit": "Life Raft",
+          "aspectRatio": 1.5
+        }
+      ]
     }
   ]
 }
