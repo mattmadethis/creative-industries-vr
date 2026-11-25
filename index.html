@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.75 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.76 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -237,7 +237,7 @@
       const controller=new AbortController();
       const timer=setTimeout(()=>controller.abort(),5000);
       try{
-        const response=await fetch(asset("content/catalogue.json?v=palladium-20261117-2"),{signal:controller.signal,cache:"no-store"});
+        const response=await fetch(asset("content/catalogue.json?v=performing-arts-20261125"),{signal:controller.signal,cache:"no-store"});
         if(!response.ok)throw Error("Catalogue HTTP "+response.status);
         const data=await response.json();
         if(data.version!==1||!Array.isArray(data.rooms))throw Error("Invalid catalogue");
@@ -476,7 +476,7 @@
       {name:"Music",color:0x63b9e7,origin:V(-HUB_SPACING*0.75,-HUB_RISE/2),links:{0:1,1:3},titles:["Music production","Live music","Electronic Production","Ambient Moods","Sound installations","Teachers Rock"]},
       {name:"Creative Media",slug:"media",color:0xf0a34f,origin:V(HUB_SPACING*0.25,-HUB_RISE/2),links:{3:0,1:2},titles:["Film","Media production","Photography","Moving image","Digital media","Screening room"]},
       {name:"Art & Design",slug:"art",color:0x72c28c,origin:V(HUB_SPACING*0.75,HUB_RISE/2),links:{3:3,4:1},titles:["Gallery One","Gallery Two","Gallery Three","Gallery Four","Gallery Five","Gallery Six"]},
-      {name:"Performing Arts",color:0xc49aec,origin:V(-HUB_SPACING*0.25,HUB_RISE/2),links:{0:2,4:0},titles:["Stage design","Performance","Dance","Into the Woods","Performance practice","Showcase"]}
+      {name:"Performing Arts",color:0xc49aec,origin:V(-HUB_SPACING*0.25,HUB_RISE/2),links:{0:2,4:0},titles:["Induction Project","Legally Blonde","Dick Whittington Pantomime","Into the Woods","Rebellious Women","Life Raft"]}
     ];
     const departmentNameLines=d=>d.slug==="media"?["Creative","Media"]:d.slug==="art"?["Art &","Design"]:d.name==="Performing Arts"?["Performing","Arts"]:[d.name];
     const deptColor=d=>"#"+d.color.toString(16).padStart(6,"0");
@@ -1427,7 +1427,7 @@
         const key=departmentSlug(g.department)+"/"+(g.slot+1)+"/"+slot;
         const exhibit=catalogue.get(key)||null;
         // Curated Palladium photo display: do not create unused branded frames.
-        if(departmentSlug(g.department)==="music"&&g.slot===1&&!exhibit)return;
+        if((departmentSlug(g.department)==="music"&&g.slot===1||departmentSlug(g.department)==="performing-arts")&&!exhibit)return;
         if(exhibit?.type==="video"&&slot==="back"&&g.link===null)return;
         const ratio=Number(exhibit?.aspectRatio);
         const nativeRatio=Number.isFinite(ratio)&&ratio>=.4&&ratio<=3;
@@ -1436,7 +1436,7 @@
         plan.push({slot,position:localPoint(g,depth,offset),normal,width:displayWidth,height,exhibit:exhibit?.type==="image"?exhibit:null});
       };
       const isWoods=departmentSlug(g.department)==="performing-arts"&&g.slot===3;
-      if(isWoods){
+      if(departmentSlug(g.department)==="performing-arts"){
         add("left",APOTHEM+3,-SIDE/2+inset,t.clone(),4.0);
         add("left-extra",APOTHEM+9,-SIDE/2+inset,t.clone(),3.2);
         add("right",APOTHEM+3,SIDE/2-inset,t.clone().negate(),4.0);
@@ -2493,7 +2493,8 @@
       const filmPosition=localPoint(g,APOTHEM+SIDE-WALL_T/2-0.075,0);
       const inward=new THREE.Vector3(-g.normal.x,0,-g.normal.y);
       const teachersRock=g.department===departments[0]&&g.slot===5;
-      const screenWidth=teachersRock?SIDE-WALL_T-.04:6.4,screenHeight=teachersRock?WALL_H-.08:screenWidth*9/16;
+      const woodsFilm=departmentSlug(g.department)==="performing-arts"&&g.slot===3;
+      const screenWidth=teachersRock?SIDE-WALL_T-.04:woodsFilm?7.6:6.4,screenHeight=teachersRock?WALL_H-.08:screenWidth*9/16;
       const rotation=Math.atan2(inward.x,inward.z);
       // Teachers Rock: one decoded texture feeds three wall-sized projections.
       // Fill the wide wall without stretching; crop top/bottom symmetrically.
