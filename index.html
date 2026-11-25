@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.82 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.83 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3415,17 +3415,41 @@
       oppositeBoard.updateMatrixWorld(true);
       scene.add(oppositeBoard);
       const menuBoards=[board,oppositeBoard];
+      let menuCollapsed=false;
+      const miniCanvas=document.createElement("canvas");miniCanvas.width=512;miniCanvas.height=128;
+      const mc=miniCanvas.getContext("2d");
+      const miniTex=new THREE.CanvasTexture(miniCanvas);
+      const miniMaterial=new THREE.MeshBasicMaterial({map:miniTex,side:THREE.FrontSide,toneMapped:false});
+      const miniBoards=menuBoards.map(full=>{
+        const m=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.3),miniMaterial);
+        m.position.copy(full.position);m.position.y=.65;m.quaternion.copy(full.quaternion);m.visible=false;scene.add(m);return m;
+      });
+      function setMenuCollapsed(value){
+        menuCollapsed=value;hover=-1;
+        menuBoards.forEach(m=>m.visible=!value);
+        miniBoards.forEach(m=>m.visible=value);
+        desktopPlays.forEach(b=>b.style.display=value?"none":"");
+        desktopToggle.textContent=value?"Show compositions":"Minimise menu";
+        desktopStatus.style.display=value?"none":"";
+        desktopHint.style.display=value?"none":"";
+        draw();
+      }
       const thumbs=entries.map(entry=>{if(!entry)return null;const img=new Image();img.onload=()=>draw();img.onerror=()=>draw();img.src=asset(root+entry.folder+"/thumb.jpg");return img;});
       const desktopSelector=document.createElement("div");
       desktopSelector.id="surroundAVSelector";
       desktopSelector.style.cssText="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:14;max-width:90vw;width:360px;background:#101b2aee;border:1px solid #63b9e7;border-radius:12px;padding:12px;text-align:center;color:white;box-shadow:0 6px 24px #0009";
       desktopSelector.innerHTML='<div style="font-size:11px;letter-spacing:.12em;margin-bottom:7px">IMMERSIVE SOUND &amp; VISION</div><div style="display:flex;gap:8px"><button type="button" data-slot="0" style="flex:1;padding:10px">▶ Mi Bombo</button><button type="button" data-slot="1" style="flex:1;padding:10px">▶ Blue Moon</button></div><div style="font-size:12px;margin-top:7px" aria-live="polite"></div><div style="font-size:11px;opacity:.7;margin-top:4px">Press 1 or 2 to play · Esc to release mouse</div>';
       document.body.appendChild(desktopSelector);
-      const desktopPlays=Array.from(desktopSelector.querySelectorAll("button")), desktopStatus=desktopSelector.querySelector('[aria-live]');
+      const desktopPlays=Array.from(desktopSelector.querySelectorAll("button[data-slot]")), desktopStatus=desktopSelector.querySelector('[aria-live]');
+      const desktopHint=desktopSelector.lastElementChild;
+      const desktopToggle=document.createElement("button");desktopToggle.type="button";desktopToggle.textContent="Minimise menu";desktopToggle.style.cssText="margin-top:6px;padding:5px 12px";desktopSelector.appendChild(desktopToggle);
+      desktopToggle.addEventListener("click",e=>{e.stopPropagation();setMenuCollapsed(!menuCollapsed);});
       desktopPlays.forEach(button=>button.addEventListener("click",e=>{e.stopPropagation();choose(Number(button.dataset.slot));}));
       addEventListener("keydown",e=>{if(inside&&!renderer.xr.isPresenting&&!e.repeat&&/^Digit[12]$/.test(e.code)){e.preventDefault();choose(Number(e.code.slice(-1))-1);}});
       function draw(){
         desktopStatus.textContent=status;
+        mc.fillStyle="#101a28";mc.fillRect(0,0,512,128);mc.strokeStyle=hover===4?"#ffffff":"#63b9e7";mc.lineWidth=5;mc.strokeRect(3,3,506,122);
+        mc.fillStyle="#ffffff";mc.textAlign="center";mc.textBaseline="middle";mc.font="600 42px system-ui";mc.fillText("Show menu",256,64);miniTex.needsUpdate=true;
         desktopPlays.forEach((button,i)=>{button.textContent=selected===i&&loading?"Loading…":(selected===i&&voices.length?"↻ ":"▶ ")+entries[i].title;button.disabled=selected===i&&loading;});
         brandPanel(ctx,1024,640,deptColor(g.department));
         ctx.textAlign="center";ctx.fillStyle="#63b9e7";ctx.font="bold 23px system-ui";ctx.fillText("YEAR 2 MUSIC / SURROUND PROJECT",512,48);
@@ -3462,7 +3486,7 @@
       }
       async function choose(i){
         if(!inside||!entries[i])return;
-        stop();selected=i;loading=true;const token=serial;abort=new AbortController();const signal=abort.signal;
+        stop();setMenuCollapsed(false);selected=i;loading=true;const token=serial;abort=new AbortController();const signal=abort.signal;
         status="Loading audio and video…";draw();unlockFilmAudio();
         try{
           if(!filmAudio)throw Error("Audio unavailable");
@@ -3497,19 +3521,19 @@
             const reflections=[];
             source.start(start);voices.push({source,pan,gain,reflections,x:wp.x,z:wp.y,fadeUntil:start+.6,lastGain:DIRECT_LEVEL});
           });
-          status="Playing · "+entries[i].title+" · Immersive Quad";draw();
+          status="Playing · "+entries[i].title+" · Immersive Quad";setMenuCollapsed(true);
         }catch(err){if(token===serial){stop();status="Playback error · "+(err.message||"select to retry");draw();console.warn("Surround AV",err);}}
         finally{if(token===serial){loading=false;draw();}}
       }
-      function hit(){const h=ray.intersectObjects(menuBoards,false)[0];if(!h?.uv)return -1;const x=h.uv.x*1024,y=(1-h.uv.y)*640;for(let i=0;i<4;i++){const a=52+(i%2)*470,b=138+Math.floor(i/2)*208;if(x>=a&&x<=a+450&&y>=b&&y<=b+190)return i;}return -1;}
+      function hit(){if(menuCollapsed)return ray.intersectObjects(miniBoards,false).length?4:-1;const h=ray.intersectObjects(menuBoards,false)[0];if(!h?.uv)return -1;const x=h.uv.x*1024,y=(1-h.uv.y)*640;for(let i=0;i<4;i++){const a=52+(i%2)*470,b=138+Math.floor(i/2)*208;if(x>=a&&x<=a+450&&y>=b&&y<=b+190)return i;}return -1;}
       function controllerHit(controller){controller.updateMatrixWorld(true);rotation.extractRotation(controller.matrixWorld);ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);ray.ray.direction.set(0,0,-1).applyMatrix4(rotation);return hit();}
-      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(inside&&!vrMenuActive&&renderer.xr.isPresenting){const i=controllerHit(controller);if(i>=0)choose(i);}}));
-      renderer.domElement.addEventListener("click",e=>{if(!inside||renderer.xr.isPresenting)return;const r=renderer.domElement.getBoundingClientRect();yawObject.updateMatrixWorld(true);ray.setFromCamera(isLocked?new THREE.Vector2(0,0):new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);const i=hit();if(i>=0)choose(i);});
+      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(inside&&!vrMenuActive&&renderer.xr.isPresenting){const i=controllerHit(controller);if(i===4)setMenuCollapsed(false);else if(i>=0)choose(i);}}));
+      renderer.domElement.addEventListener("click",e=>{if(!inside||renderer.xr.isPresenting)return;const r=renderer.domElement.getBoundingClientRect();yawObject.updateMatrixWorld(true);ray.setFromCamera(isLocked?new THREE.Vector2(0,0):new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);const i=hit();if(i===4)setMenuCollapsed(false);else if(i>=0)choose(i);});
       const beams=vrMenuControllers.map(controller=>{const beam=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0x8edfff,transparent:true,opacity:.8,depthTest:false}));beam.visible=false;beam.scale.z=5;beam.frustumCulled=false;controller.add(beam);return beam;});
       const listenerPosition=new THREE.Vector3();
       function update(dt){
         const q=roomCoordinates(g,yawObject.position),next=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
-        if(next!==inside){inside=next;if(!inside){stop();selected=-1;status="Select a composition";draw();}}
+        if(next!==inside){inside=next;if(!inside){stop();selected=-1;status="Select a composition";setMenuCollapsed(false);}}
         const idleTarget=videoTexture?0:1;
         idleMat.opacity+=(idleTarget-idleMat.opacity)*(1-Math.exp(-Math.max(0,dt)*6));
         idleWall.visible=idleMat.opacity>.005;
@@ -3527,7 +3551,7 @@
             if(Math.abs(target-v.lastGain)>.008){v.gain.gain.setTargetAtTime(target,now,.14);v.lastGain=target;}
           });
         }
-        let h=-1;beams.forEach((beam,j)=>{beam.visible=inside&&renderer.xr.isPresenting&&!vrMenuActive;if(beam.visible){const i=controllerHit(vrMenuControllers[j]);if(i>=0)h=i;beam.material.color.setHex(i>=0?0xffffff:0x8edfff);}});if(h!==hover){hover=h;draw();}
+        let h=-1;beams.forEach((beam,j)=>{beam.visible=inside&&renderer.xr.isPresenting&&!vrMenuActive;if(beam.visible){const i=controllerHit(vrMenuControllers[j]);if(i>=0)h=i;beam.visible=!menuCollapsed||i>=0;beam.material.color.setHex(i>=0?0xffffff:0x8edfff);}});if(h!==hover){hover=h;draw();}
       }
       draw();return {update};
     })();
