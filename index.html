@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.83 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.84 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3086,7 +3086,7 @@
     const ambient26=(()=>{
       const g=galleryBySlot(0,3),ROOT="https://raw.githubusercontent.com/northdevoncollege-music/ambient26/main/audio/";
       let selected=1,inside=false,serial=0,playing=[],cache=new Map(),loading=false,previousButtons=[false,false],hoveredButton=0;
-      let boardStatus="Four spatial audio layers";
+      let boardStatus="Four spatial audio layers",menuCollapsed=false;
 
       // Continuous animated wall surfaces: a single procedural shader spans all
       // walls in room-local coordinates. No video decoding or texture downloads.
@@ -3163,7 +3163,21 @@
       const board=new THREE.Mesh(new THREE.PlaneGeometry(4.8,2.4),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true,depthWrite:false,depthTest:false}));
       const bp=localPoint(g,APOTHEM+SIDE-.25,0);board.position.set(bp.x,2.65,bp.y);
       board.rotation.y=Math.atan2(-g.normal.x,-g.normal.y);board.renderOrder=12;board.visible=false;scene.add(board);
+      const miniCanvas=document.createElement("canvas");miniCanvas.width=512;miniCanvas.height=128;
+      const mc=miniCanvas.getContext("2d"),miniTex=new THREE.CanvasTexture(miniCanvas);
+      const miniBoard=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.3),new THREE.MeshBasicMaterial({map:miniTex,side:THREE.FrontSide,depthTest:true,toneMapped:false}));
+      miniBoard.position.copy(board.position);miniBoard.position.y=.65;miniBoard.quaternion.copy(board.quaternion);miniBoard.visible=false;scene.add(miniBoard);
+      const hudToggle=document.createElement("button");hudToggle.type="button";hudToggle.textContent="Minimise menu";hudToggle.style.cssText="margin-top:7px;padding:5px 12px";hud.appendChild(hudToggle);
+      const hudControls=Array.from(hud.children).filter(n=>n!==hudToggle);
+      function setMenuCollapsed(value){
+        menuCollapsed=value;hoveredButton=0;board.visible=inside&&!value;miniBoard.visible=inside&&value;
+        hudControls.forEach(n=>n.style.display=value?"none":"");if(!value)hud.querySelector("#ambient26Prev").parentElement.style.display="flex";
+        hudToggle.textContent=value?"Show moods":"Minimise menu";draw();
+      }
+      hudToggle.addEventListener("click",()=>setMenuCollapsed(!menuCollapsed));
       function draw(){
+        mc.fillStyle="#101a28";mc.fillRect(0,0,512,128);mc.strokeStyle=hoveredButton===2?"#ffffff":"#63b9e7";mc.lineWidth=5;mc.strokeRect(3,3,506,122);
+        mc.fillStyle="#fff";mc.font="600 42px system-ui";mc.textAlign="center";mc.textBaseline="middle";mc.fillText("Show menu",256,64);miniTex.needsUpdate=true;
         ctx.clearRect(0,0,1024,512);
         ctx.save();ctx.beginPath();ctx.roundRect(5,5,1014,502,76);ctx.clip();
         brandPanel(ctx,1024,512,deptColor(g.department));
@@ -3297,11 +3311,12 @@
             playing.push({source,panner,gain,fadeStart:commonStart,fadeUntil:commonStart+CROSSFADE});
           });
           status.textContent="Playing · move around to explore the mix";
-          boardStatus="Playing · move around to explore the mix";draw();
-        }catch(err){if(token===serial){status.textContent="Audio unavailable — select another scene";boardStatus="Audio unavailable · choose another scene";draw();console.warn("Ambient26 audio:",err);}}
+          boardStatus="Playing · move around to explore the mix";setMenuCollapsed(true);
+        }catch(err){if(token===serial){status.textContent="Audio unavailable — select another scene";boardStatus="Audio unavailable · choose another scene";setMenuCollapsed(false);console.warn("Ambient26 audio:",err);}}
         finally{if(token===serial)loading=false;}
       }
       function choose(delta){
+        setMenuCollapsed(false);
         const oldTheme=wallUniforms.uTheme.value;
         selected=(selected-1+delta+12)%12+1;
         visualBlendFrom=oldTheme;
@@ -3314,8 +3329,8 @@
       hud.querySelector("#ambient26Prev").addEventListener("click",()=>choose(-1));
       hud.querySelector("#ambient26Next").addEventListener("click",()=>choose(1));
       addEventListener("keydown",e=>{if(!inside||renderer.xr.isPresenting||e.repeat||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName||""))return;if(e.code==="KeyQ"||e.code==="KeyE"){e.preventDefault();choose(e.code==="KeyE"?1:-1);}},true);
-      function pointerHit(controller){controller.updateMatrixWorld(true);pointerRotation.extractRotation(controller.matrixWorld);pointerRay.ray.origin.setFromMatrixPosition(controller.matrixWorld);pointerRay.ray.direction.set(0,0,-1).applyMatrix4(pointerRotation);const hit=pointerRay.intersectObject(board,false)[0];if(!hit||!hit.uv)return null;const x=hit.uv.x*1024,y=(1-hit.uv.y)*512;if(y>=424&&y<=488&&x>=112&&x<=372)return -1;if(y>=424&&y<=488&&x>=652&&x<=912)return 1;return 0;}
-      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(!inside||!renderer.xr.isPresenting||vrMenuActive)return;const delta=pointerHit(controller);if(delta)choose(delta);}));
+      function pointerHit(controller){controller.updateMatrixWorld(true);pointerRotation.extractRotation(controller.matrixWorld);pointerRay.ray.origin.setFromMatrixPosition(controller.matrixWorld);pointerRay.ray.direction.set(0,0,-1).applyMatrix4(pointerRotation);if(menuCollapsed)return pointerRay.intersectObject(miniBoard,false).length?2:null;const hit=pointerRay.intersectObject(board,false)[0];if(!hit||!hit.uv)return null;const x=hit.uv.x*1024,y=(1-hit.uv.y)*512;if(y>=424&&y<=488&&x>=112&&x<=372)return -1;if(y>=424&&y<=488&&x>=652&&x<=912)return 1;return 0;}
+      vrMenuControllers.forEach(controller=>controller.addEventListener("selectstart",()=>{if(!inside||!renderer.xr.isPresenting||vrMenuActive)return;const delta=pointerHit(controller);if(delta===2)setMenuCollapsed(false);else if(delta)choose(delta);}));
       const listenerHead=new THREE.Vector3(),listenerQuat=new THREE.Quaternion(),listenerForward=new THREE.Vector3(),listenerUp=new THREE.Vector3();
       function update(dt){
         const q=roomCoordinates(g,yawObject.position);
@@ -3323,11 +3338,11 @@
         if(exhibitionStarted){visualTime+=dt;wallUniforms.uTime.value=visualTime;wallUniforms.uFade.value=visualFade;wallUniforms.uBlend.value=Math.min(1,Math.max(0,(performance.now()/1000-visualBlendStart)/VISUAL_TRANSITION));}
         wallSurfaces.forEach(mesh=>mesh.visible=visualFade>.005);
         const now=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
-        board.visible=now;
-        if(now!==inside){inside=now;hud.style.display=inside&&!renderer.xr.isPresenting?"block":"none";if(inside)start();else{serial++;stop(2.5);loading=false;}}
+        board.visible=now&&!menuCollapsed;miniBoard.visible=now&&menuCollapsed;
+        if(now!==inside){inside=now;hud.style.display=inside&&!renderer.xr.isPresenting?"block":"none";if(inside)start();else{serial++;stop(2.5);loading=false;setMenuCollapsed(false);}}
         if(inside){
           hud.style.display=renderer.xr.isPresenting?"none":"block";
-          if(renderer.xr.isPresenting){let activeHover=0;vrMenuControllers.forEach((controller,i)=>{const beam=vrPointers[i];beam.visible=!vrMenuActive;if(!vrMenuActive){const hit=pointerHit(controller);if(hit)activeHover=hit;beam.material.color.setHex(hit?0xf4d9a9:0xc8b69a);}});if(activeHover!==hoveredButton){hoveredButton=activeHover;draw();}}else{if(hoveredButton){hoveredButton=0;draw();}vrPointers.forEach(beam=>beam.visible=false);}
+          if(renderer.xr.isPresenting){let activeHover=0;vrMenuControllers.forEach((controller,i)=>{const beam=vrPointers[i];beam.visible=!vrMenuActive;if(!vrMenuActive){const hit=pointerHit(controller);if(hit)activeHover=hit;beam.visible=!menuCollapsed||!!hit;beam.material.color.setHex(hit?0xf4d9a9:0xc8b69a);}});if(activeHover!==hoveredButton){hoveredButton=activeHover;draw();}}else{if(hoveredButton){hoveredButton=0;draw();}vrPointers.forEach(beam=>beam.visible=false);}
         }else{previousButtons=[false,false];if(hoveredButton){hoveredButton=0;draw();}vrPointers.forEach(beam=>beam.visible=false);}
         if(!filmAudio||!playing.length)return;
         // Shared listener pose is set once per frame by updateFilm.
