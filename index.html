@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.86 · 25 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.87 · 26 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -474,7 +474,7 @@
     const HUB_RISE=HUB_SPACING*Math.sqrt(3)/2;
     const departments=[
       {name:"Music",color:0x63b9e7,origin:V(-HUB_SPACING*0.75,-HUB_RISE/2),links:{0:1,1:3},titles:["Music production","Live music","Electronic Production","Ambient Moods","Sound installations","Teachers Rock"]},
-      {name:"Creative Media",slug:"media",color:0xf0a34f,origin:V(HUB_SPACING*0.25,-HUB_RISE/2),links:{3:0,1:2},titles:["Film","Media production","Photography","Moving image","Digital media","Screening room"]},
+      {name:"Creative Media",slug:"media",color:0xf0a34f,origin:V(HUB_SPACING*0.25,-HUB_RISE/2),links:{3:0,1:2},titles:["Film","D/ARCHIVE","Photography","Moving image","Digital media","Screening room"]},
       {name:"Art & Design",slug:"art",color:0x72c28c,origin:V(HUB_SPACING*0.75,HUB_RISE/2),links:{3:3,4:1},titles:["Gallery One","Gallery Two","Gallery Three","Gallery Four","Gallery Five","Gallery Six"]},
       {name:"Performing Arts",color:0xc49aec,origin:V(-HUB_SPACING*0.25,HUB_RISE/2),links:{0:2,4:0},titles:["Induction Project","Legally Blonde","Dick Whittington Pantomime","Into the Woods","Rebellious Women","Life Raft"]}
     ];
@@ -791,6 +791,22 @@
           cinemaRooms.push({g,shade,surfaces,halo,haloColor:haloColor.clone(),level:0});
         }
         doorway(a,b);wall(b,c);wall(d,a);
+        if(department===departments[1]&&i===1){
+          // Interior-only matte finish, leaving shared doorway geometry intact.
+          const charcoal=new THREE.MeshStandardMaterial({color:0x29262d,roughness:1});
+          function magazineWall(from,to,inward){
+            const p=from.clone().add(to).multiplyScalar(.5).addScaledVector(inward,WALL_T/2+.009);
+            const mesh=new THREE.Mesh(new THREE.PlaneGeometry(from.distanceTo(to)-.025,WALL_H-.04),charcoal);
+            mesh.position.set(p.x,WALL_H/2,p.y);mesh.rotation.y=Math.atan2(inward.x,inward.y);scene.add(mesh);
+          }
+          magazineWall(d,a,t);magazineWall(b,c,t.clone().negate());
+          for(const depth of [APOTHEM,APOTHEM+SIDE]){
+            const inward=depth===APOTHEM?n:n.clone().negate();
+            magazineWall(at(depth,-SIDE/2),at(depth,-DOOR_W/2),inward);
+            magazineWall(at(depth,DOOR_W/2),at(depth,SIDE/2),inward);
+          }
+          label("D/ARCHIVE — DAISY HOBBS",at(APOTHEM+SIDE/2,SIDE/2-WALL_T/2-.035),t.clone().negate(),"#f1b6d5",2.55,7.5,.85);
+        }
         const closedSharedWall=department===departments[3]&&i===5;
         if(g.link===null&&!closedSharedWall) wall(c,d);
         else if(g.link!==null&&departments.indexOf(department)<g.link){
@@ -1300,7 +1316,7 @@
     function permanentArtworkSlot(room,item){
       const width=item.width,height=item.height??width*.75,normal=item.normal;
       const rotation=Math.atan2(normal.x,normal.y),p=item.position;
-      const pos=new THREE.Vector3(p.x,2.3,p.y),outward=new THREE.Vector3(normal.x,0,normal.y);
+      const pos=new THREE.Vector3(p.x,item.y??2.3,p.y),outward=new THREE.Vector3(normal.x,0,normal.y);
       const department=room.gallery.department;
       // Thin aluminium profile, warm mount and a small float-off-wall reveal.
       furniture(department,"frameShadow/"+width+"/"+height,()=>new THREE.PlaneGeometry(width+.34,height+.34),artShadowMaterial,pos.clone().addScaledVector(outward,-.028),rotation);
@@ -1309,6 +1325,7 @@
       furniture(department,"mat/"+width+"/"+height,()=>new THREE.PlaneGeometry(width+.106,height+.106),artMatMaterial,pos.clone().addScaledVector(outward,.038),rotation);
       if(!item.exhibit)furniture(department,"placeholder/"+width+"/"+height,()=>new THREE.PlaneGeometry(width,height),placeholderMaterial,pos.clone().addScaledVector(outward,.041),rotation);
       // Empty display positions have only the college-branded frame, not a fictional artwork label.
+      if(item.exhibit&&item.noPlaque)return;
       if(item.exhibit&&departmentSlug(department)==="art"){
         const e=item.exhibit,canvas=document.createElement("canvas");canvas.width=1024;canvas.height=768;
         const c=canvas.getContext("2d");c.fillStyle="#f5f1e9";c.fillRect(0,0,1024,768);
@@ -1393,9 +1410,9 @@
     }
 
     // Only the actual artwork texture and overlay mesh enter the bounded cache.
-    function addFramedArtwork(group,room,study,wallPoint,normal,width,texture,height=width*.75){
+    function addFramedArtwork(group,room,study,wallPoint,normal,width,texture,height=width*.75,y=2.3){
       const rotation=Math.atan2(normal.x,normal.y);
-      const pos=new THREE.Vector3(wallPoint.x,2.3,wallPoint.y);
+      const pos=new THREE.Vector3(wallPoint.x,y,wallPoint.y);
       const outward=new THREE.Vector3(normal.x,0,normal.y);
       const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,opacity:0,depthWrite:false});
       const image=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material);
@@ -1410,6 +1427,19 @@
       if(g.department===departments[0]&&(g.slot===2||g.slot===3||g.slot===4||g.slot===5))return [];
       const inset=WALL_T/2+0.065, flank=(SIDE+DOOR_W)/4;
       const plan=[];
+      if(g.department===departments[1]&&g.slot===1){
+        const files=["01-front-cover.jpg","02-spread-fashion.jpg","03-spread-divine-feminine.jpg","04-spread-style-guide.jpg","05-spread-etheree.jpg","06-spread-street-archive.jpg","07-spread-byeboy.jpg","08-back-cover.jpg"];
+        const titles=["Front cover","Fashion","The Divine Feminine","Style guide","Éthérée","The Street Archive","BYEBOY","Back cover"];
+        const addMagazine=(i,depth,offset,normal,width,y)=>{
+          const ratio=i===0||i===7?724/1024:1448/1024;
+          const file="media/d-archive-vr/"+files[i];
+          plan.push({slot:"magazine-"+i,position:localPoint(g,depth,offset),normal,width,height:width/ratio,y,noPlaque:true,exhibit:{type:"image",file,url:asset(file),aspectRatio:ratio,title:titles[i],artist:"Daisy Hobbs"}});
+        };
+        for(let i=1;i<=6;i++)addMagazine(i,APOTHEM+[2.2,6,9.8][(i-1)%3],-SIDE/2+inset,t.clone(),2.68,i<=3?3.45:1.35);
+        addMagazine(0,APOTHEM+inset,-flank,n.clone(),1.75,2.3);
+        addMagazine(7,APOTHEM+SIDE-inset,-flank,n.clone().negate(),1.75,2.3);
+        return plan;
+      }
       if(departmentSlug(g.department)==="art"){
         const entries=[{"room":1,"order":1,"file":"media/art-design-gallery-assets-v2/gallery-one/01-gabriel-napier-starboy-artwork.jpg","artist":"Gabriel Napier","title":"Starboy","materials":"Oil painting and spray paint","body":"The inspiration comes from the footballer Bukayo Saka, who is the number 7 for Arsenal Football Club and England. Bukayo has had such inspiration and influence within the footballing world and is someone I idolise for the mentality and passion he possesses. This piece is all about cultural pride and power; the raw and urban graffiti, along with the celebration, captures a moment of pure joy and power.","aspectRatio":1.3333333333333333},{"room":1,"order":2,"file":"media/art-design-gallery-assets-v2/gallery-one/02-izzy-hadfield-peep-show-artwork.jpg","artist":"Izzy Hadfield","title":"Peep Show","materials":"Procreate","body":"Digital art visually inspired by kitschy 50s and 60s showgirls, mixed with classic fetish imagery, representing materials like latex to show that there’s always something going on underneath the surface.","aspectRatio":0.75},{"room":2,"order":1,"file":"media/art-design-gallery-assets-v2/gallery-two/01-jasmine-day-le-velours-rouge-artwork.jpg","artist":"Jasmine Day","title":"Le Velours Rouge!","materials":"Burgundy velvet, burgundy appliques, fringing, beads, feathers, feather boa, rigilene boning, eyelets, burgundy ribbon","body":"This piece is a showgirl costume inspired by the Moulin Rouge. I wanted to express the liberation of women by creating a striking corset influenced by Catherine Zuber.","aspectRatio":1.2649739583333333},{"room":2,"order":2,"file":"media/art-design-gallery-assets-v2/gallery-two/02-sam-foster-you-win-or-you-die-artwork.jpg","artist":"Samuel Foster","title":"You win or you die","materials":"Oil paint on canvas","body":"An oil painting of a fallen knight on a past battlefield; a king stands over him victorious and unharmed by the battle.","aspectRatio":1.6222222222222222},{"room":3,"order":1,"file":"media/art-design-gallery-assets-v2/gallery-three/01-ayse-akar-rocknroll-revival-artwork.jpg","artist":"Ayse Akar","title":"Rock 'n' Roll Revival","materials":"Cotton fabric, recycled garments, leather fabric and silk","body":"My design is about a 50s-inspired outfit for a classic 1950s film, including the themes of one of my favourite films I have grown up with, Grease, the 50s icons Marilyn Monroe and Audrey Hepburn, and the influence of the 50s Cadillac Coupe Deville.","aspectRatio":0.6917391304347826},{"room":3,"order":2,"file":"media/art-design-gallery-assets-v2/gallery-three/02-elsa-jones-the-return-of-couture-artwork.jpg","artist":"Elsa Jones","title":"The Return of Couture","materials":"Calico, silk and gold brocade","body":"My work is inspired by 1950s haute couture, and how designers like Christian Dior revolutionised the industry and changed history to this day.","aspectRatio":0.7386956521739131},{"room":4,"order":1,"file":"media/art-design-gallery-assets-v2/gallery-four/01-gabriel-napier-legacy-artwork.jpg","artist":"Gabriel Napier","title":"Legacy","materials":"Spray paints, acrylic paints and oil paints","body":"This piece is about the rise of black movements in the 70s, where the culture of hip hop, black music, black sportsmen and significant people shaped the world and highlighted the importance of racial equality. The focus is on the footballer Pelé, who was significant in this era and is considered to be one of the most famous black people of all time.","aspectRatio":0.6464646464646465},{"room":4,"order":2,"file":"media/art-design-gallery-assets-v2/gallery-four/02-jasmine-day-historical-costume-artwork.jpg","artist":"Jasmine Day","title":"Historical Costume","materials":"Satin, lace, lace applique","body":"My piece is inspired by the dresses that were made and designed for the Netflix series Bridgerton. I wanted to design a dress inspired by the series for a stage or theatre production.","aspectRatio":0.6442857142857142},{"room":5,"order":1,"file":"media/art-design-gallery-assets-v2/gallery-five/01-josie-howard-interior-design-artwork.jpg","artist":"Josie Howard","title":"Interior Design","materials":"Recycled furniture, paint, clay, fabric, wallpaper and digital software","body":"My work for this project was inspired by my love for interior design throughout the ages. I specifically focused on creating a contemporary outcome influenced by the beauty of the Edwardian era and all that it stood for.","aspectRatio":0.6121673003802282},{"room":5,"order":2,"file":"media/art-design-gallery-assets-v2/gallery-five/02-lillian-dunsworth-nouveau-artwork.jpg","artist":"Lillian Dunsworth","title":"Nouveau","materials":"Oil paint on primed MDF board","body":"This piece is based on the 1910s style Art Nouveau.","aspectRatio":0.5031578947368421},{"room":6,"order":1,"file":"media/art-design-gallery-assets-v2/gallery-six/01-niamh-mcrilley-slim-shady-artwork.jpg","artist":"Niamh McRilley","title":"Slim Shady","materials":"Oils, acrylic, spray paint, canvas","body":"A celebration of music from the Noughties.","aspectRatio":1},{"room":6,"order":2,"file":"media/art-design-gallery-assets-v2/gallery-six/02-henry-gayton-hill-egyptian-graffitti-artwork.jpg","artist":"Henry Gayton-Hill","title":"Egyptian Graffitti","materials":"Mixed media, clay, spray paint","body":"The work explores the links between modern-day graffiti and the Egyptians’ early use of graphics.","aspectRatio":2.5850340136054424},{"room":6,"order":3,"file":"media/art-design-gallery-assets-v2/gallery-six/03-willow-hamer-yesterday-artwork.jpg","artist":"Willow Hamer","title":"Yesterday","materials":"Acrylic, watercolour, clay, chalk","body":"A memory-based work inspired by the lyrics of The Beatles and the culture of the 60s.","aspectRatio":0.7204230006609386},{"room":5,"order":3,"file":"media/art-design-gallery-assets-v2/supplementary/01-riley-hunt-moon-landing-artwork.jpg","artist":"Riley Hunt","title":"","materials":"","body":"","aspectRatio":0.746031746031746},{"room":3,"order":3,"artist":"Anya Muzard Clark","title":"Velum Priscum Fulgoris","materials":"Beading and embroidery","body":"A multimedia piece incorporating beading and embroidery techniques. With the background drawing inspiration from the vast blue ocean, I have created a renaissance style portrait to highlight the natural and innocent beauty of the often overlooked, ordinary woman. A woman who may not receive the same admiration in today’s world, something many women can unfortunately relate to.","file":"media/art-design-additions/anya-muzard-clark.jpg","aspectRatio":0.7151071615263983},{"room":1,"order":3,"artist":"Billy Randall","title":"Tribal","materials":"Fine Art, Carving and Graphic Design","body":"This piece is of the beaver inspired by traditional Haida art from Canada BC. It is a symbol for persistence and determination. I also painted on a piece of hide inspired by the painting on hide created by Chief Kicking Bear, at The Battle Of Bighorn. The colours signify RED for blood spilt, WHITE for the spirit, BLUE for the sky and BLACK for ongoing war preparation.","file":"media/art-design-additions/billy-randall.jpg","aspectRatio":1.597444089456869},{"room":2,"order":3,"artist":"Felix Pacey","title":"The Hive Mindset","materials":"Spray painted mural","body":"This is a mural of humanoid bee-creatures locked in routine – part human, part drone.","file":"media/art-design-additions/felix-pacey.jpg","aspectRatio":0.5383333333333333},{"room":4,"order":3,"artist":"Jessica Davie","title":"Develop Or Destroy?","materials":"100 × 100 canvas with oil paints","body":"My piece depicts the reality of deforestation and the impact on endangered species in our world today, plus the large economic growth of the cities, I have portrayed this by showing what there is now (the city) and what used to be there (the forest) including a very known endangered species the Tiger which can highlight most endangered species and what they go through in today’s developing world.","file":"media/art-design-additions/jessica-davie.jpg","aspectRatio":1}];
         const works=entries.filter(e=>e.room===g.slot+1).sort((a,b)=>a.order-b.order);
@@ -1607,7 +1637,7 @@
         loadImageTexture(source,previewController.signal,256).then(texture=>{
           const normal=item.normal, outward=new THREE.Vector3(normal.x,0,normal.y);
           const mesh=new THREE.Mesh(new THREE.PlaneGeometry(item.width,item.height),new THREE.MeshBasicMaterial({map:texture}));
-          mesh.position.set(item.position.x,2.3,item.position.y);
+          mesh.position.set(item.position.x,item.y??2.3,item.position.y);
           mesh.position.addScaledVector(outward,.043);
           mesh.rotation.y=Math.atan2(normal.x,normal.y);
           scene.add(mesh);previewCount++;
@@ -1754,7 +1784,7 @@
             const signal=entry.controller.signal;
             loadImageTexture(item.exhibit,signal).then(texture=>{
               if(signal.aborted||cache.get(room.index)!==entry){texture.dispose();return;}
-              addFramedArtwork(entry.group,room,study,item.position,item.normal,item.width,texture,item.height);
+              addFramedArtwork(entry.group,room,study,item.position,item.normal,item.width,texture,item.height,item.y);
               entry.built++;loadedWorks++;
               artworkStates.set(item.exhibit.url,"displayed");
               failures.delete(item.exhibit.url);
