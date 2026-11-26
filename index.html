@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.87 · 26 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.88 · 26 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3374,11 +3374,12 @@
       const entries=[{title:"Mi Bombo",folder:"mi-bombo"},{title:"Blue Moon",folder:"blue-moon"},null,null];
       let inside=false,selected=-1,serial=0,voices=[],video=null,videoTexture=null,abort=null,loading=false,status="Select a composition",hover=-1,limiter=null;
       const SPEAKER_RADIUS=3.0, SPEAKER_OFFSET=SPEAKER_RADIUS/Math.sqrt(2), DIRECT_LEVEL=.62, REFLECTION_LEVEL=.075;
-      const panels=[], cards=[], canvas=document.createElement("canvas");canvas.width=1024;canvas.height=640;
+      const panels=[], backPanels=[], cards=[], canvas=document.createElement("canvas");canvas.width=1024;canvas.height=640;
       const ctx=canvas.getContext("2d"),tex=new THREE.CanvasTexture(canvas);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
       if("colorSpace" in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
       const [a,b,c,d]=g.vertices;
       const mat=new THREE.MeshBasicMaterial({color:0x204e78,side:THREE.FrontSide});
+      const backMat=new THREE.MeshBasicMaterial({color:0x888888,side:THREE.FrontSide});
       // One undistorted cover projection per wall. The three entrance pieces
       // share a single full-wall UV coordinate system, leaving the doorway open.
       function screen(a,b,inward,low=0,high=WALL_H,wallA=a,wallB=b){
@@ -3399,12 +3400,21 @@
         mesh.userData.projectionUV=base;mesh.userData.wallAspect=wallWidth/WALL_H;
         mesh.userData.section={width,low,high,offset,right,origin:p.clone()};
         mesh.position.set(p.x,(low+high)/2,p.y);mesh.rotation.y=Math.atan2(inward.x,inward.y);mesh.visible=true;scene.add(mesh);panels.push(mesh);
+        const back=new THREE.Mesh(geometry.clone(),backMat);
+        back.position.copy(mesh.position);back.position.x-=inward.x*.025;back.position.z-=inward.y*.025;
+        back.rotation.copy(mesh.rotation);back.visible=false;scene.add(back);backPanels.push(back);
       }
       function fitProjection(video,heightFit=false){
         const aspect=video.videoWidth/video.videoHeight;
         if(!Number.isFinite(aspect)||aspect<=0)return;
-        for(const mesh of panels){
+        for(let j=0;j<panels.length;j++){
+          const mesh=panels[j],back=backPanels[j];
           const {width,low,high,offset,right,origin}=mesh.userData.section;
+          const wallAspect=mesh.userData.wallAspect;
+          const sx=Math.min(1,wallAspect/aspect),sy=Math.min(1,aspect/wallAspect);
+          const buv=back.geometry.attributes.uv;
+          mesh.userData.projectionUV.forEach(([u,v],k)=>buv.setXY(k,.5+(u-.5)*sx,.5+(v-.5)*sy));
+          buv.needsUpdate=true;back.visible=heightFit;
           mesh.geometry.dispose();
           if(heightFit){
             // Mi Bombo: display at exactly wall height, retaining native aspect.
@@ -3536,6 +3546,7 @@
         const now=filmAudio?.currentTime||0;
         for(const v of voices){try{v.gain.gain.cancelScheduledValues(now);v.gain.gain.setTargetAtTime(0,now,.12);v.source.stop(now+.65);v.source.onended=()=>{v.source.disconnect();v.pan.disconnect();v.gain.disconnect();v.reflections.forEach(n=>n.disconnect());};}catch(_){}}
         voices=[];
+        backPanels.forEach(b=>b.visible=false);backMat.map=null;backMat.needsUpdate=true;
         if(video){video.pause();video.removeAttribute("src");video.load();video=null;}videoTexture?.dispose();videoTexture=null;mat.map=null;mat.color.setHex(0x204e78);mat.needsUpdate=true;
       }
       async function choose(i){
@@ -3556,7 +3567,7 @@
           await v.play();if(token!==serial||!inside)return;
           videoTexture=new THREE.VideoTexture(v);videoTexture.minFilter=THREE.LinearFilter;videoTexture.magFilter=THREE.LinearFilter;
           if("colorSpace" in videoTexture&&THREE.SRGBColorSpace)videoTexture.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)videoTexture.encoding=THREE.sRGBEncoding;
-          fitProjection(v,i===0);mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
+          fitProjection(v,i===0);backMat.map=i===0?videoTexture:null;backMat.needsUpdate=true;mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
           if(!limiter){limiter=filmAudio.createDynamicsCompressor();limiter.threshold.value=-5;limiter.knee.value=6;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.15;limiter.connect(filmAudio.destination);}
           const start=filmAudio.currentTime+.08,duration=Math.min(...buffers.map(b=>b.duration));
           const offsets=[[1,1],[-1,1],[1,-1],[-1,-1]];
