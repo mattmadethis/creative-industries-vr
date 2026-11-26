@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.89 · 26 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.90 · 26 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3379,12 +3379,12 @@
       if("colorSpace" in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
       const [a,b,c,d]=g.vertices;
       const mat=new THREE.MeshBasicMaterial({color:0x204e78,side:THREE.FrontSide});
-      const backMat=new THREE.MeshBasicMaterial({color:0x888888,side:THREE.FrontSide});
+      const backMat=new THREE.MeshBasicMaterial({color:0xbbbbbb,side:THREE.FrontSide});
       // Downsample the shared decoded frame, then blur in a tiny canvas.
       // One low-resolution texture upload at 20 fps, shared by every wall.
       const blurCanvas=document.createElement("canvas");blurCanvas.width=128;blurCanvas.height=72;
       const blurCtx=blurCanvas.getContext("2d");
-      const smallCanvas=document.createElement("canvas");smallCanvas.width=24;smallCanvas.height=14;
+      const smallCanvas=document.createElement("canvas");smallCanvas.width=40;smallCanvas.height=23;
       const smallCtx=smallCanvas.getContext("2d");
       const blurTex=new THREE.CanvasTexture(blurCanvas);
       blurTex.minFilter=THREE.LinearFilter;blurTex.magFilter=THREE.LinearFilter;blurTex.generateMipmaps=false;
@@ -3396,9 +3396,9 @@
         smallCtx.drawImage(video,0,0,smallCanvas.width,smallCanvas.height);
         blurCtx.imageSmoothingEnabled=true;blurCtx.imageSmoothingQuality="high";
         blurCtx.filter="none";blurCtx.drawImage(smallCanvas,0,0,w,h);
-        blurCtx.filter="blur(9px)";
+        blurCtx.filter="blur(6px)";
         // Overscan a little to avoid transparent edges from the blur kernel.
-        blurCtx.drawImage(smallCanvas,-24,-24,w+48,h+48);
+        blurCtx.drawImage(smallCanvas,-18,-18,w+36,h+36);
         blurCtx.filter="none";blurTex.needsUpdate=true;lastBlurTime=video.currentTime;
       }
       // One undistorted cover projection per wall. The three entrance pieces
@@ -3588,7 +3588,7 @@
           await v.play();if(token!==serial||!inside)return;
           videoTexture=new THREE.VideoTexture(v);videoTexture.minFilter=THREE.LinearFilter;videoTexture.magFilter=THREE.LinearFilter;
           if("colorSpace" in videoTexture&&THREE.SRGBColorSpace)videoTexture.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)videoTexture.encoding=THREE.sRGBEncoding;
-          if(i===0){blurCanvas.height=Math.max(1,Math.round(128*v.videoHeight/v.videoWidth));smallCanvas.height=Math.max(1,Math.round(24*v.videoHeight/v.videoWidth));refreshBlur();}
+          if(i===0){blurCanvas.height=Math.max(1,Math.round(128*v.videoHeight/v.videoWidth));smallCanvas.height=Math.max(1,Math.round(40*v.videoHeight/v.videoWidth));refreshBlur();}
           fitProjection(v,i===0);backMat.map=i===0?blurTex:null;backMat.needsUpdate=true;mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
           if(!limiter){limiter=filmAudio.createDynamicsCompressor();limiter.threshold.value=-5;limiter.knee.value=6;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.15;limiter.connect(filmAudio.destination);}
           const start=filmAudio.currentTime+.08,duration=Math.min(...buffers.map(b=>b.duration));
