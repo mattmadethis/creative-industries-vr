@@ -3397,17 +3397,41 @@
         }
         const mesh=new THREE.Mesh(geometry,mat);
         mesh.userData.projectionUV=base;mesh.userData.wallAspect=wallWidth/WALL_H;
+        mesh.userData.section={width,low,high,offset,right,origin:p.clone()};
         mesh.position.set(p.x,(low+high)/2,p.y);mesh.rotation.y=Math.atan2(inward.x,inward.y);mesh.visible=true;scene.add(mesh);panels.push(mesh);
       }
-      function fitProjection(video){
+      function fitProjection(video,heightFit=false){
         const aspect=video.videoWidth/video.videoHeight;
         if(!Number.isFinite(aspect)||aspect<=0)return;
         for(const mesh of panels){
-          const wallAspect=mesh.userData.wallAspect,uv=mesh.geometry.attributes.uv;
-          // Crop only the excess dimension, never stretch the source.
-          const sx=Math.min(1,wallAspect/aspect),sy=Math.min(1,aspect/wallAspect);
-          mesh.userData.projectionUV.forEach(([u,v],k)=>uv.setXY(k,.5+(u-.5)*sx,.5+(v-.5)*sy));
-          uv.needsUpdate=true;
+          const {width,low,high,offset,right,origin}=mesh.userData.section;
+          mesh.geometry.dispose();
+          if(heightFit){
+            // Mi Bombo: display at exactly wall height, retaining native aspect.
+            // Clip the plane at the wall/door boundaries, not the video image.
+            const displayWidth=WALL_H*aspect;
+            const left=Math.max(offset-width/2,-displayWidth/2);
+            const rightEdge=Math.min(offset+width/2,displayWidth/2);
+            if(rightEdge<=left){mesh.visible=false;continue;}
+            const midpoint=(left+rightEdge)/2;
+            const geometry=new THREE.PlaneGeometry(rightEdge-left,high-low);
+            const uv=geometry.attributes.uv;
+            for(let k=0;k<uv.count;k++){
+              const horizontal=midpoint+(uv.getX(k)-.5)*(rightEdge-left);
+              uv.setXY(k,.5+horizontal/displayWidth,(low+uv.getY(k)*(high-low))/WALL_H);
+            }
+            mesh.geometry=geometry;
+            mesh.position.set(origin.x+right.x*(midpoint-offset),(low+high)/2,origin.y+right.y*(midpoint-offset));
+          }else{
+            // Existing cover-style fit for the other compositions.
+            const geometry=new THREE.PlaneGeometry(width,high-low);
+            const uv=geometry.attributes.uv,wallAspect=mesh.userData.wallAspect;
+            const sx=Math.min(1,wallAspect/aspect),sy=Math.min(1,aspect/wallAspect);
+            mesh.userData.projectionUV.forEach(([u,v],k)=>uv.setXY(k,.5+(u-.5)*sx,.5+(v-.5)*sy));
+            mesh.geometry=geometry;
+            mesh.position.set(origin.x,(low+high)/2,origin.y);
+          }
+          mesh.visible=true;
         }
       }
       screen(b,c,g.tangent.clone().negate());screen(d,a,g.tangent);screen(c,d,g.normal.clone().negate());
@@ -3532,7 +3556,7 @@
           await v.play();if(token!==serial||!inside)return;
           videoTexture=new THREE.VideoTexture(v);videoTexture.minFilter=THREE.LinearFilter;videoTexture.magFilter=THREE.LinearFilter;
           if("colorSpace" in videoTexture&&THREE.SRGBColorSpace)videoTexture.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)videoTexture.encoding=THREE.sRGBEncoding;
-          fitProjection(v);mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
+          fitProjection(v,i===0);mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
           if(!limiter){limiter=filmAudio.createDynamicsCompressor();limiter.threshold.value=-5;limiter.knee.value=6;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.15;limiter.connect(filmAudio.destination);}
           const start=filmAudio.currentTime+.08,duration=Math.min(...buffers.map(b=>b.duration));
           const offsets=[[1,1],[-1,1],[1,-1],[-1,-1]];
