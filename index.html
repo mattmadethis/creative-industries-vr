@@ -173,7 +173,7 @@
       <div class="barLabel" id="barLabel">Loading…</div>
 
       <div id="status"></div>
-      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.88 · 26 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
+      <footer class="entry-version" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #35435e;font-size:11px;color:#afbdd4"><span>Exhibition v0.10.89 · 26 November 2026</span><a href="./versions.html" style="color:#9bdfff">Version history</a></footer>
     </div>
   </div>
 
@@ -3380,6 +3380,27 @@
       const [a,b,c,d]=g.vertices;
       const mat=new THREE.MeshBasicMaterial({color:0x204e78,side:THREE.FrontSide});
       const backMat=new THREE.MeshBasicMaterial({color:0x888888,side:THREE.FrontSide});
+      // Downsample the shared decoded frame, then blur in a tiny canvas.
+      // One low-resolution texture upload at 20 fps, shared by every wall.
+      const blurCanvas=document.createElement("canvas");blurCanvas.width=128;blurCanvas.height=72;
+      const blurCtx=blurCanvas.getContext("2d");
+      const smallCanvas=document.createElement("canvas");smallCanvas.width=24;smallCanvas.height=14;
+      const smallCtx=smallCanvas.getContext("2d");
+      const blurTex=new THREE.CanvasTexture(blurCanvas);
+      blurTex.minFilter=THREE.LinearFilter;blurTex.magFilter=THREE.LinearFilter;blurTex.generateMipmaps=false;
+      if("colorSpace" in blurTex&&THREE.SRGBColorSpace)blurTex.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)blurTex.encoding=THREE.sRGBEncoding;
+      let lastBlurTime=-1;
+      function refreshBlur(){
+        if(!video||video.readyState<2)return;
+        const w=blurCanvas.width,h=blurCanvas.height;
+        smallCtx.drawImage(video,0,0,smallCanvas.width,smallCanvas.height);
+        blurCtx.imageSmoothingEnabled=true;blurCtx.imageSmoothingQuality="high";
+        blurCtx.filter="none";blurCtx.drawImage(smallCanvas,0,0,w,h);
+        blurCtx.filter="blur(9px)";
+        // Overscan a little to avoid transparent edges from the blur kernel.
+        blurCtx.drawImage(smallCanvas,-24,-24,w+48,h+48);
+        blurCtx.filter="none";blurTex.needsUpdate=true;lastBlurTime=video.currentTime;
+      }
       // One undistorted cover projection per wall. The three entrance pieces
       // share a single full-wall UV coordinate system, leaving the doorway open.
       function screen(a,b,inward,low=0,high=WALL_H,wallA=a,wallB=b){
@@ -3546,7 +3567,7 @@
         const now=filmAudio?.currentTime||0;
         for(const v of voices){try{v.gain.gain.cancelScheduledValues(now);v.gain.gain.setTargetAtTime(0,now,.12);v.source.stop(now+.65);v.source.onended=()=>{v.source.disconnect();v.pan.disconnect();v.gain.disconnect();v.reflections.forEach(n=>n.disconnect());};}catch(_){}}
         voices=[];
-        backPanels.forEach(b=>b.visible=false);backMat.map=null;backMat.needsUpdate=true;
+        backPanels.forEach(b=>b.visible=false);backMat.map=null;backMat.needsUpdate=true;lastBlurTime=-1;
         if(video){video.pause();video.removeAttribute("src");video.load();video=null;}videoTexture?.dispose();videoTexture=null;mat.map=null;mat.color.setHex(0x204e78);mat.needsUpdate=true;
       }
       async function choose(i){
@@ -3567,7 +3588,8 @@
           await v.play();if(token!==serial||!inside)return;
           videoTexture=new THREE.VideoTexture(v);videoTexture.minFilter=THREE.LinearFilter;videoTexture.magFilter=THREE.LinearFilter;
           if("colorSpace" in videoTexture&&THREE.SRGBColorSpace)videoTexture.colorSpace=THREE.SRGBColorSpace;else if(THREE.sRGBEncoding)videoTexture.encoding=THREE.sRGBEncoding;
-          fitProjection(v,i===0);backMat.map=i===0?videoTexture:null;backMat.needsUpdate=true;mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
+          if(i===0){blurCanvas.height=Math.max(1,Math.round(128*v.videoHeight/v.videoWidth));smallCanvas.height=Math.max(1,Math.round(24*v.videoHeight/v.videoWidth));refreshBlur();}
+          fitProjection(v,i===0);backMat.map=i===0?blurTex:null;backMat.needsUpdate=true;mat.map=videoTexture;mat.color.setHex(0xffffff);mat.needsUpdate=true;
           if(!limiter){limiter=filmAudio.createDynamicsCompressor();limiter.threshold.value=-5;limiter.knee.value=6;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.15;limiter.connect(filmAudio.destination);}
           const start=filmAudio.currentTime+.08,duration=Math.min(...buffers.map(b=>b.duration));
           const offsets=[[1,1],[-1,1],[1,-1],[-1,-1]];
@@ -3599,6 +3621,7 @@
       function update(dt){
         const q=roomCoordinates(g,yawObject.position),next=exhibitionStarted&&q.depth>APOTHEM&&q.depth<APOTHEM+SIDE&&Math.abs(q.lateral)<SIDE/2;
         if(next!==inside){inside=next;if(!inside){stop();selected=-1;status="Select a composition";setMenuCollapsed(false);}}
+        if(inside&&selected===0&&videoTexture&&video&&Math.abs(video.currentTime-lastBlurTime)>=.05)refreshBlur();
         const idleTarget=videoTexture?0:1;
         idleMat.opacity+=(idleTarget-idleMat.opacity)*(1-Math.exp(-Math.max(0,dt)*6));
         idleWall.visible=idleMat.opacity>.005;
